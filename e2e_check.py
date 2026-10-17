@@ -35,7 +35,7 @@ def main():
     data_dir = tempfile.mkdtemp(prefix="meshbee-e2e-")
     proc = subprocess.Popen(
         [sys.executable, "server.py", "--port", str(PORT),
-         "--data-dir", data_dir, "--corpus", "./corpus.sample.json"],
+         "--data-dir", data_dir, "--corpus", "sample"],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
         for _ in range(50):
@@ -147,7 +147,7 @@ def main():
         proc.wait(timeout=5)
         proc = subprocess.Popen(
             [sys.executable, "server.py", "--port", str(PORT),
-             "--data-dir", data_dir, "--corpus", "./corpus.sample.json"],
+             "--data-dir", data_dir, "--corpus", "sample"],
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         for _ in range(50):
             try:

@@ -2,41 +2,70 @@
 
 A self-contained spelling bee practice website: hear a word, type it, get
 friendly letter-by-letter feedback. One Python process serves everything —
-no database, no pip dependencies, no build step, no CDN assets.
+no database, no runtime pip dependencies, no build step, no CDN assets.
+
+MeshBee is a proper installable Python package (`meshbee`), managed with
+[uv](https://docs.astral.sh/uv/). The runtime stays **stdlib-only** — the
+packaging exists purely for build/deploy ergonomics.
 
 ## Run it
 
+### From a checkout
+
 ```bash
-python3 server.py                     # http://127.0.0.1:8765
-python3 server.py --port 9000 --data-dir /srv/meshbee-data
-python3 server.py --corpus ./corpus.sample.json   # use the small test corpus
+uv run meshbee                        # http://127.0.0.1:8765 (uv manages a local venv)
+uv run meshbee --corpus sample        # use the small bundled test corpus
+# or, with no tooling at all (plain python3):
+python3 server.py --port 9000 --data-dir ./data
 ```
 
-Flags:
+### Deploy to a server (build once, install anywhere)
+
+```bash
+# on your machine
+uv build                              # -> dist/meshbee-1.1.0-py3-none-any.whl
+
+# copy the wheel to the server, then:
+uv tool install ./meshbee-1.1.0-py3-none-any.whl     # or: pipx install ./meshbee-*.whl
+meshbee --port 8765 --data-dir /var/lib/meshbee --corpus /var/lib/meshbee/corpus.json
+```
+
+No uv/pipx on the box? A plain venv works too:
+`python3 -m venv v && v/bin/pip install meshbee-*.whl && v/bin/meshbee ...`
+
+The wheel bundles the frontend (`static/`) and the sample corpus as package
+data (served via `importlib.resources`), so a single `.whl` file is the whole
+deploy artifact.
+
+### Flags
 
 | Flag | Default | Purpose |
 |------|---------|---------|
 | `--port` | `8765` | HTTP port |
 | `--data-dir` | `./data` | Where profiles/lists/progress JSON files live |
-| `--corpus` | `./corpus.json` | Word corpus file (if missing, the app runs with a friendly "no words installed" notice; custom lists still work) |
+| `--corpus` | `./corpus.json` | Word corpus file. If missing, the app runs with a friendly "no words installed" notice (custom lists still work). The literal value `sample` uses the small bundled test corpus. |
 | `--host` | `127.0.0.1` | Bind address (use `0.0.0.0` to serve the LAN) |
 
-Requirements: Python 3.9+ (stdlib only). Frontend: Chrome / Edge / Safari.
+Requirements: Python 3.9+ (stdlib only at runtime). Frontend: Chrome / Edge / Safari.
 
 ## Tests
 
 ```bash
-python3 -m unittest test_server.py -v   # 66 unit tests
+python3 -m unittest -v                  # 66 unit tests
 python3 e2e_check.py                    # end-to-end HTTP exercise (spawns its own server)
 ```
 
 ## Project layout
 
 ```
-server.py            stdlib HTTP server: JSON API + static file serving
-corpus.json          full word corpus (authored separately; schema below)
-corpus.sample.json   small 15-word corpus for development/testing
-static/              index.html, app.js, style.css (vanilla, no frameworks)
+pyproject.toml       packaging (setuptools backend, zero runtime deps, `meshbee` CLI)
+server.py            thin checkout shim -> meshbee.server:main
+meshbee/             the installable package
+  __init__.py
+  server.py          stdlib HTTP server: JSON API + static file serving
+  static/            index.html, app.js, style.css (vanilla, no frameworks)
+  corpus.sample.json small 15-word corpus, bundled; selected with --corpus sample
+corpus.json          full word corpus (authored separately; schema below; NOT bundled)
 data/                runtime JSON data (gitignored): profiles.json, lists.json,
                      progress-<profileId>.json — all written atomically
 test_server.py       unittest suite
@@ -90,8 +119,8 @@ letter diff (`difflib.SequenceMatcher`) with segment ops:
 
 ### Stars
 
-- 3 stars — every word correct **and** no definition/sentence hints (replay and
-  slow replay are always free)
+- 3 stars — every word correct **and** no definition/sentence hints (replay,
+  slow replay, and post-answer spell-out are always free)
 - 2 stars — ≥ 80% correct (= 8/10 on a standard session)
 - 1 star — ≥ 50% correct (= 5/10)
 - otherwise: "Keep buzzing!"
@@ -104,6 +133,17 @@ For custom lists shorter than 10 words the thresholds scale proportionally
 A missed word becomes "tricky". It is mastered (leaves the tricky pool) after
 being spelled correctly **2 times in a row** after the miss. The tricky-words
 session becomes available once a profile has 3+ unmastered missed words.
+
+## Hearing the word
+
+- **Hear the word** (hero button) — unlimited, free, spoken on each
+  presentation.
+- **Slowly** — reduced-rate replay, also free.
+- **Definition / Sentence** — spoken hints; using either costs the 3rd star.
+- **Spell it to me** — *post-answer only* (feedback card and summary): speaks
+  the word, then each letter with natural pauses, then the word again
+  ("necessary… N, E, C, E, S, S, A, R, Y… necessary"). Free — the answer is
+  already locked in. Hyphens/apostrophes are spoken by name.
 
 ## Keyboard shortcuts
 
@@ -119,7 +159,8 @@ session becomes available once a profile has 3+ unmastered missed words.
 
 `Alt+letter` was chosen over `Ctrl+letter` to avoid browser-critical
 shortcuts (`Ctrl+R` reloads). `F2` is a convenient single-key replay that
-browsers don't claim.
+browsers don't claim. During feedback, keys aimed at the "Spell it to me"
+button activate it rather than advancing.
 
 ## NFR-6 tradeoff — "the word must not be visible before answering"
 
@@ -152,6 +193,20 @@ accepted, best-effort protection per the PRD resolution.
   2.5s → a kid-friendly banner appears and the "Show word to a grown-up" peek
   button is enabled (not star-penalized while TTS is broken).
 
+## Roadmap
+
+- **Voice-spelling input** (kid says letters aloud; letters appear in the
+  answer box). Planned approach: Web Speech Recognition
+  (`webkitSpeechRecognition` / `SpeechRecognition`) in continuous mode with a
+  letter-name grammar/post-filter (A–Z plus "hyphen" and "apostrophe"),
+  confidence thresholding, and a visible push-to-talk toggle. The frontend is
+  already structured for it: the answer box is owned by a small
+  `answerInput` controller in `app.js` (`appendLetter` / `backspace` /
+  `clear` / `submit`), so a recognition engine feeds letters through the same
+  API the keyboard uses — no practice-flow changes needed. Recognition is
+  Chrome/Edge-only and usually cloud-backed, so it will ship as an optional
+  enhancement with the typed path always available.
+
 ## PRD deviations / flags for the Product Owner
 
 1. **Star thresholds on short sessions** (FR-11 vs FR-10): the PRD defines
@@ -173,3 +228,5 @@ accepted, best-effort protection per the PRD resolution.
    internal spaces are collapsed when grading.
 6. **Profile names must be unique** (case-insensitive) — the PRD doesn't say,
    but duplicate "pick your name" entries would be ambiguous for kids.
+7. **"Spell it to me" is free** (doesn't cost stars): it is only available
+   after the answer is locked in, so it can't help with the current word.

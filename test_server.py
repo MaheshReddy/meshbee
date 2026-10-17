@@ -9,8 +9,8 @@ import shutil
 import tempfile
 import unittest
 
-import server
-from server import (
+import meshbee.server as server
+from meshbee.server import (
     ApiError,
     ServerApp,
     atomic_write_json,

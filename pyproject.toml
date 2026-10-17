@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "meshbee"
+version = "1.1.0"
+description = "Spelling bee practice website for grades 4-5 — stdlib-only, single-process server"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Proprietary" }
+# Runtime is intentionally stdlib-only: zero dependencies.
+dependencies = []
+
+[project.scripts]
+meshbee = "meshbee.server:main"
+
+[tool.setuptools]
+packages = ["meshbee"]
+
+[tool.setuptools.package-data]
+meshbee = ["static/*", "corpus.sample.json"]

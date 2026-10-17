@@ -62,6 +62,7 @@ const state = {
   lists: [],
   progress: null,         // active profile progress
   session: null,          // { id, entries:[{word,definition,sentence}], index, total, label, source }
+  answeredEntry: null,    // entry just answered (feedback phase): replay/spell-out target
   editingProfileId: null,
   editingListId: null,
   lastMessageIdx: -1,
@@ -162,6 +163,32 @@ const tts = {
     }
   },
 
+  /* "Spell it to me": speak the word, then each letter as its own utterance
+   * so the queue produces natural pauses. Post-answer only (caller enforces). */
+  spellOut(word) {
+    if (!this.available || this.broken || !word) return;
+    try {
+      speechSynthesis.cancel();
+      const pieces = [word];
+      for (const ch of word) {
+        if (ch === "-") pieces.push("hyphen");
+        else if (ch === "'") pieces.push("apostrophe");
+        else if (ch === " ") pieces.push("new word");
+        else pieces.push(ch.toUpperCase() + ".");
+      }
+      pieces.push(word);
+      for (const piece of pieces) {
+        const utt = new SpeechSynthesisUtterance(piece);
+        if (this.chosenVoice) utt.voice = this.chosenVoice;
+        utt.rate = piece === word ? 0.9 : 0.75;
+        utt.pitch = 1.05;
+        speechSynthesis.speak(utt);
+      }
+    } catch (e) {
+      this.markBroken();
+    }
+  },
+
   markBroken() {
     if (this.broken) return;
     this.broken = true;
@@ -187,6 +214,29 @@ function populateVoiceSelect() {
     sel.appendChild(opt);
   }
 }
+
+// ---------------------------------------------------------------------------
+// Answer input controller — single owner of the answer box. Alternate input
+// sources (e.g. the planned voice-spelling via Web Speech Recognition, see
+// README Roadmap) feed letters through this API instead of touching the DOM.
+// ---------------------------------------------------------------------------
+const answerInput = {
+  el: null,
+  init(el) { this.el = el; },
+  get value() { return this.el.value; },
+  clear() { this.el.value = ""; },
+  appendLetter(ch) {           // future: speech-recognition letters land here
+    if (this.el.disabled || typeof ch !== "string") return;
+    this.el.value += ch;
+  },
+  backspace() { if (!this.el.disabled) this.el.value = this.el.value.slice(0, -1); },
+  setEnabled(on) {
+    this.el.disabled = !on;
+    $("btn-submit").disabled = !on;
+  },
+  focus() { this.el.focus(); },
+  submit() { submitAnswer(); },
+};
 
 // ---------------------------------------------------------------------------
 // Screen router
@@ -463,23 +513,24 @@ function presentWord() {
   const entry = currentEntry();
   state.advanceArmed = false;
   state.pendingAnswer = false;
+  state.answeredEntry = null;
   $("feedback").classList.add("hidden");
   $("feedback").innerHTML = "";
-  $("answer-input").value = "";
-  $("answer-input").disabled = false;
-  $("btn-submit").disabled = false;
+  answerInput.clear();
+  answerInput.setEnabled(true);
   $("btn-def").disabled = !entry.definition;
   $("btn-sentence").disabled = !entry.sentence;
   $("btn-def").classList.remove("used");
   $("btn-sentence").classList.remove("used");
   renderProgressDots();
-  $("answer-input").focus();
+  answerInput.focus();
   // NFR-7: speak promptly on presentation
   setTimeout(() => tts.speak(entry.word), 50);
 }
 
 function replayWord(rate) {
-  const entry = currentEntry();
+  // During feedback, replay targets the word just answered — not the next one.
+  const entry = state.answeredEntry || currentEntry();
   if (!entry) return;
   tts.speak(entry.word, rate);
 }
@@ -514,21 +565,21 @@ async function openPeek() {
 async function submitAnswer() {
   const s = state.session;
   if (!s || state.advanceArmed || state.pendingAnswer) return;
-  const attempt = $("answer-input").value.trim();
-  if (!attempt) { $("answer-input").focus(); return; }
+  const attempt = answerInput.value.trim();
+  if (!attempt) { answerInput.focus(); return; }
+  const answered = currentEntry();
   state.pendingAnswer = true;
-  $("btn-submit").disabled = true;
-  $("answer-input").disabled = true;
+  answerInput.setEnabled(false);
   let res;
   try {
     res = await api("POST", `/api/session/${s.id}/answer`, { attempt });
   } catch (e) {
     state.pendingAnswer = false;
-    $("btn-submit").disabled = false;
-    $("answer-input").disabled = false;
+    answerInput.setEnabled(true);
     alert(e.message);
     return;
   }
+  state.answeredEntry = answered;
   s.results[s.index] = res.correct;
   s.index = res.index;
   s.summary = res.summary;
@@ -547,6 +598,19 @@ function pickEncouragement() {
   return ENCOURAGEMENTS[idx];
 }
 
+function spellButton(word) {
+  const b = el("button", "btn btn-ghost btn-small");
+  b.id = "btn-spell";
+  b.type = "button";
+  b.appendChild(svgIcon("abc"));
+  b.appendChild(document.createTextNode("Spell it to me"));
+  b.addEventListener("click", () => {
+    clearAutoAdvance();          // don't cut the spelling off mid-letter
+    tts.spellOut(word);
+  });
+  return b;
+}
+
 function showCorrectFeedback(res) {
   const fb = $("feedback");
   fb.innerHTML = "";
@@ -556,6 +620,9 @@ function showCorrectFeedback(res) {
   title.appendChild(document.createTextNode(pickEncouragement()));
   card.appendChild(title);
   card.appendChild(el("p", "feedback-sub", "Press any key to keep going…"));
+  const row = el("div", "feedback-actions");
+  row.appendChild(spellButton(res.correctWord));
+  card.appendChild(row);
   fb.appendChild(card);
   fb.classList.remove("hidden");
   $("mascot").classList.add("happy");
@@ -575,11 +642,14 @@ function showWrongFeedback(res) {
   title.appendChild(document.createTextNode("So close! Let's look together."));
   card.appendChild(title);
   card.appendChild(renderDiff(res.diff, res.attempt, res.correctWord));
+  const row = el("div", "feedback-actions");
+  row.appendChild(spellButton(res.correctWord));
   const gotIt = el("button", "btn btn-primary", "Got it!");
   gotIt.id = "btn-gotit";
   gotIt.type = "button";
   gotIt.addEventListener("click", advance);
-  card.appendChild(gotIt);
+  row.appendChild(gotIt);
+  card.appendChild(row);
   fb.appendChild(card);
   fb.classList.remove("hidden");
   state.advanceArmed = true;   // manual advance; Enter also works via keydown handler
@@ -644,16 +714,18 @@ function advance() {
 // ---------------------------------------------------------------------------
 const CONFETTI_COLORS = ["#f6b73c", "#e2873b", "#5a9e4b", "#5b9bd5", "#d4566a", "#ffd54d"];
 
-function burstConfetti(count = 26) {
+function burstConfetti(count = 30) {
   const layer = $("confetti-layer");
+  const shapes = ["star", "round", "strip"];
   for (let i = 0; i < count; i++) {
-    const p = el("span", "confetti " + (Math.random() < 0.5 ? "star" : "round"));
+    const p = el("span", "confetti " + shapes[Math.floor(Math.random() * shapes.length)]);
     p.style.left = Math.random() * 100 + "vw";
     p.style.background = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
-    p.style.animationDuration = 1 + Math.random() * 1.4 + "s";
+    p.style.animationDuration = 1 + Math.random() * 1.5 + "s";
     p.style.width = p.style.height = 8 + Math.random() * 10 + "px";
+    p.style.setProperty("--drift", (Math.random() * 120 - 60).toFixed(0) + "px");
     layer.appendChild(p);
-    setTimeout(() => p.remove(), 2600);
+    setTimeout(() => p.remove(), 2800);
   }
 }
 
@@ -686,6 +758,12 @@ function showSummary(summary) {
       say.appendChild(document.createTextNode("Hear it"));
       say.addEventListener("click", () => tts.speak(m.word));
       item.appendChild(say);
+      const spell = el("button", "btn btn-ghost btn-small");
+      spell.type = "button";
+      spell.appendChild(svgIcon("abc"));
+      spell.appendChild(document.createTextNode("Spell it"));
+      spell.addEventListener("click", () => tts.spellOut(m.word));
+      item.appendChild(spell);
       missedWrap.appendChild(item);
     }
   }
@@ -837,8 +915,11 @@ document.addEventListener("keydown", (ev) => {
   if (ev.altKey && (ev.key === "d" || ev.key === "D")) { ev.preventDefault(); useHint("definition"); return; }
   if (ev.altKey && (ev.key === "e" || ev.key === "E")) { ev.preventDefault(); useHint("sentence"); return; }
 
-  // When feedback is showing, any key advances a correct answer; Enter advances a wrong one.
+  // When feedback is showing, any key advances a correct answer; Enter advances
+  // a wrong one. Keys aimed at the "Spell it to me" button pass through so it
+  // stays keyboard-operable.
   if (state.advanceArmed) {
+    if (ev.target && ev.target.id === "btn-spell") return;
     const wasWrong = state.session && state.session.results[state.session.index - 1] === false;
     if (wasWrong) {
       if (ev.key === "Enter") { ev.preventDefault(); advance(); }
@@ -852,6 +933,7 @@ document.addEventListener("keydown", (ev) => {
 // Wire-up
 // ---------------------------------------------------------------------------
 function wireEvents() {
+  answerInput.init($("answer-input"));
   $("profile-save").addEventListener("click", saveProfile);
   $("profile-cancel").addEventListener("click", () => $("profile-form").classList.add("hidden"));
   $("profile-delete").addEventListener("click", deleteProfileFlow);
