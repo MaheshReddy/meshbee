@@ -140,6 +140,14 @@
       "Show word to a grown-up" and ask them to read it to you!</span>
     </div>
 
+    <div id="voice-banner" class="tts-banner hidden" role="alert">
+      <svg class="icon" aria-hidden="true"><use href="#icon-speaker"/></svg>
+      <span>This browser's reading voice sounds a bit robotic. For a much
+      clearer voice, try Chrome or Edge — or use "Show word to a grown-up"
+      during practice (it won't cost any stars).</span>
+      <button id="voice-banner-dismiss" class="btn btn-ghost btn-small">OK</button>
+    </div>
+
     <main id="screens">
       <!-- ============ Profile picker ============ -->
       <section id="screen-profiles" class="screen" aria-label="Pick your bee">
@@ -193,6 +201,9 @@
             <svg class="icon" aria-hidden="true"><use href="#icon-flame"/></svg>
             <span id="streak-count">0</span>
           </div>
+          <button id="btn-voice" class="btn btn-ghost btn-icon" title="Voice settings" aria-label="Voice settings">
+            <svg class="icon" aria-hidden="true"><use href="#icon-gear"/></svg>
+          </button>
         </div>
 
         <div class="practice-stage">
@@ -309,6 +320,11 @@
         <h3>Voice settings</h3>
         <label class="field-label" for="voice-select">Reading voice</label>
         <select id="voice-select"></select>
+        <label class="field-label" for="rate-slider">Talking speed
+          <span id="rate-value" class="rate-value">0.90&times;</span></label>
+        <input id="rate-slider" type="range" min="0.6" max="1.1" step="0.05" value="0.9"
+               aria-describedby="rate-value">
+        <div class="rate-scale" aria-hidden="true"><span>Slower</span><span>Faster</span></div>
         <div class="btn-row center">
           <button id="voice-test" class="btn btn-ghost">
             <svg class="icon" aria-hidden="true"><use href="#icon-speaker"/></svg> Test voice

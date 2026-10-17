@@ -185,13 +185,60 @@ accepted, best-effort protection per the PRD resolution.
 
 ## TTS notes (FR-19/FR-20)
 
-- Voice pick is deterministic: English voices sorted by (en-US first, local
-  voices first, name) — overridable in the voice settings dialog (persisted in
-  `localStorage`).
-- Failure detection: missing `speechSynthesis` API, zero voices after a 3s
-  grace period, utterance `onerror`, or an utterance that never starts within
-  2.5s → a kid-friendly banner appears and the "Show word to a grown-up" peek
-  button is enabled (not star-penalized while TTS is broken).
+### Voice selection
+
+Voices are ranked by a quality heuristic and the best one is picked
+automatically (deterministically — ties broken by name):
+
+1. **Google voices** (bundled with Chrome, e.g. "Google US English") — best
+2. **Microsoft Natural/Online voices** (bundled with Edge) — near-equal
+3. **Known-good Apple voices** (Samantha, Alex, Siri, … on Safari/macOS/iOS)
+4. Any **network voice** (`localService: false` — network voices usually
+   sound far better than generic local ones)
+5. Older local Microsoft desktop voices
+6. Unknown local voices
+7. **espeak-style robotic voices** (common on bare Linux) — last resort
+
+Within each band, en-US is preferred, then en-GB, then other English.
+`voiceschanged` is handled properly: browsers load voices asynchronously (and
+sometimes in batches), so the list is re-ranked and re-picked every time it
+changes — an early empty/partial list is never locked in. The utterance's
+`lang` is always set from the chosen voice to avoid mismatched-language
+mangling.
+
+### Voice settings (gear button — top bar and practice screen)
+
+- **Reading voice** dropdown (best-first, "— online" marks network voices;
+  "Automatic" shows which voice it resolved to). Persisted in `localStorage`
+  (a device-level preference — voices are hardware/browser-specific, not
+  profile data).
+- **Talking speed** slider: 0.6×–1.1×, default 0.9× (slightly slower than
+  normal helps kids). The "Slowly" button scales relative to this base rate.
+- **Test voice** speaks a sample word + sentence.
+
+### Failure & quality fallbacks
+
+- **Hard failure** (no `speechSynthesis`, zero voices after a 3s grace
+  period, utterance errors, utterance never starts): kid-friendly banner +
+  "Show word to a grown-up" peek button (star-free).
+- **Poor-voices-only detection**: if every available voice is known-poor (no
+  Google/Microsoft/Apple/network voices — the classic espeak-only Linux
+  setup), a gentle one-time dismissible banner suggests Chrome/Edge and
+  points at the grown-up peek, which is enabled and star-free in this state
+  too. Play is never blocked.
+
+### Voice troubleshooting ("the voice is not clear")
+
+| Situation | Fix |
+|---|---|
+| Robotic/unintelligible voice on Linux | Use **Chrome or Edge** — they bundle high-quality Google/Microsoft voices. Firefox and bare-OS browsers fall back to espeak, which is the robotic voice. |
+| Voice still unclear in Chrome/Edge | Open the gear (voice settings) and pick a "Google …" or "Microsoft … Online" voice explicitly; make sure the device is online (the best voices are network-backed). |
+| Too fast / too slow | Drag the "Talking speed" slider (persists per device). |
+| No sound at all | Check system volume/mute; the app shows a banner and enables "Show word to a grown-up" if speech is truly unavailable. |
+| Word is still ambiguous | Use the free "Slowly" replay, or the definition/sentence hints (those cost the 3rd star). |
+
+Best experience: **Chrome or Edge on desktop, online**. Safari on macOS/iOS
+is also good (high-quality local voices, works offline).
 
 ## Roadmap
 
@@ -212,10 +259,13 @@ accepted, best-effort protection per the PRD resolution.
 1. **Star thresholds on short sessions** (FR-11 vs FR-10): the PRD defines
    stars as 10/10, ≥8, ≥5 but allows 3–9-word custom-list sessions. I scaled
    proportionally (all / ≥80% / ≥50%), which is identical at 10 words.
-2. **Peek button visibility**: the grown-up peek button only appears when TTS
-   is detected as broken (the PRD only defines its behavior in that state).
-   Working TTS + peek would be a star-costing hint; that path exists in the
-   API (`kind:"peek"`, `ttsBroken:false` counts as a hint) but has no UI.
+2. **Peek button visibility**: the grown-up peek button appears when TTS is
+   hard-broken **or** when only known-poor (robotic) voices exist; in both
+   states peeks are star-free (TTS can't do its job either way — this extends
+   the PRD's "when TTS is broken" wording to unintelligible-voice setups).
+   Working, decent TTS + peek would be a star-costing hint; that path exists
+   in the API (`kind:"peek"`, `ttsBroken:false` counts as a hint) but has no
+   UI.
 3. **In-session hint tracking granularity**: stars drop with *any*
    definition/sentence hint in the session (per FR-11 "no hints"); per-word
    hint counts are also persisted to the profile's word history for future

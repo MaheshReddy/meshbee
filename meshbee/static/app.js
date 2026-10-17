@@ -98,52 +98,131 @@ const TIER_INFO = {
 // ---------------------------------------------------------------------------
 // Text-to-speech
 // ---------------------------------------------------------------------------
+const DEFAULT_RATE = 0.9;          // slightly slower than normal helps kids
+const MIN_RATE = 0.6;
+const MAX_RATE = 1.1;
+const SLOW_MULT = 0.65;            // "Slowly" replay, relative to the base rate
+
+/* Known-good Apple local voices (macOS/iOS ship these; they sound natural). */
+const APPLE_GOOD = ["samantha", "alex", "karen", "daniel", "moira", "tessa", "fiona", "ava", "allison", "susan", "zoe"];
+
+/* FR-20: quality score for a voice — higher is better. Deterministic. */
+function scoreVoice(v) {
+  const name = (v.name || "").toLowerCase();
+  const lang = (v.lang || "").toLowerCase().replace("_", "-");
+  if (!lang.startsWith("en")) return -1;
+  let score = 0;
+  if (name.includes("google")) score = 80;                       // Chrome's bundled network voices
+  else if (name.includes("microsoft") &&
+           (name.includes("natural") || name.includes("online"))) score = 78;  // Edge neural voices
+  else if (APPLE_GOOD.some((n) => name.includes(n)) || name.includes("siri")) score = 70;
+  else if (v.localService === false) score = 60;                 // network voices usually beat local
+  else if (name.includes("microsoft")) score = 50;               // older desktop MS voices: decent
+  else if (name.includes("espeak") || name.includes("eloquence") ||
+           /^english[ (+_-]/.test(name) || name === "english") score = 5;  // robotic espeak-style
+  else score = 20;                                               // unknown local voice
+  if (lang === "en-us" || lang.startsWith("en-us")) score += 15;
+  else if (lang.startsWith("en-gb")) score += 10;
+  else score += 5;                                               // other en-*
+  return score;
+}
+
+/* A set of voices is "poor" when nothing scores above a bare local unknown:
+ * no Google/Microsoft/Apple voices and no network voices (classic espeak-only
+ * Linux setups — the robotic voice the customer heard). */
+const POOR_VOICE_THRESHOLD = 40;
+
 const tts = {
   available: ("speechSynthesis" in window) && ("SpeechSynthesisUtterance" in window),
-  broken: false,          // detected failure at runtime
+  broken: false,          // detected hard failure at runtime
+  poorVoicesOnly: false,  // voices exist but all are known-poor (robotic)
   voices: [],
   chosenVoice: null,
+  baseRate: DEFAULT_RATE,
 
   init() {
+    const savedRate = parseFloat(localStorage.getItem("meshbee.rate"));
+    if (savedRate >= MIN_RATE && savedRate <= MAX_RATE) this.baseRate = savedRate;
     if (!this.available) { this.markBroken(); return; }
-    const load = () => {
-      this.voices = speechSynthesis.getVoices().filter((v) => v.lang && v.lang.toLowerCase().startsWith("en"));
-      this.pickVoice();
-      populateVoiceSelect();
-    };
-    load();
-    speechSynthesis.addEventListener("voiceschanged", load);
-    // If no voices ever appear, flag as broken after a grace period.
+    // Voices often load asynchronously (and sometimes in several batches):
+    // re-rank and re-pick on EVERY voiceschanged, never lock in an early
+    // empty/partial list.
+    this.refreshVoices();
+    speechSynthesis.addEventListener("voiceschanged", () => this.refreshVoices());
+    // Nudge engines that only populate after a getVoices() call.
+    setTimeout(() => this.refreshVoices(), 250);
     setTimeout(() => {
       if (speechSynthesis.getVoices().length === 0) this.markBroken();
     }, 3000);
   },
 
-  // FR-20: deterministic voice pick — stable sort, prefer en-US + local voices.
+  refreshVoices() {
+    if (!this.available) return;
+    this.voices = speechSynthesis.getVoices()
+      .filter((v) => v.lang && v.lang.toLowerCase().startsWith("en"))
+      .sort((a, b) => (scoreVoice(b) - scoreVoice(a)) || a.name.localeCompare(b.name));
+    this.pickVoice();
+    this.assessQuality();
+    populateVoiceSelect();
+  },
+
+  /* Deterministic pick: the user's saved voice if present, else the
+   * highest-scored voice (ties broken by name). Called again whenever the
+   * voice list changes, so a late-arriving better voice wins. */
   pickVoice() {
     const saved = localStorage.getItem("meshbee.voice");
     if (saved) {
       const match = this.voices.find((v) => v.name === saved);
       if (match) { this.chosenVoice = match; return; }
     }
-    const sorted = [...this.voices].sort((a, b) => {
-      const aUS = a.lang.toLowerCase() === "en-us" ? 0 : 1;
-      const bUS = b.lang.toLowerCase() === "en-us" ? 0 : 1;
-      if (aUS !== bUS) return aUS - bUS;
-      if (a.localService !== b.localService) return a.localService ? -1 : 1;
-      return a.name.localeCompare(b.name);
-    });
-    this.chosenVoice = sorted[0] || null;
+    this.chosenVoice = this.voices[0] || null;   // voices[] is score-sorted
   },
 
-  speak(text, rate = 0.92) {
+  /* No-good-voice detection: all available voices are known-poor. One-time,
+   * dismissible banner; play is never blocked. Grown-up peek is enabled. */
+  assessQuality() {
+    if (!this.voices.length) return;
+    const best = scoreVoice(this.voices[0]);
+    this.poorVoicesOnly = best < POOR_VOICE_THRESHOLD;
+    if (this.poorVoicesOnly) {
+      $("btn-peek").classList.remove("hidden");
+      if (!localStorage.getItem("meshbee.poorVoiceNoticeDismissed")) {
+        $("voice-banner").classList.remove("hidden");
+      }
+    } else {
+      $("voice-banner").classList.add("hidden");
+      if (!this.broken) $("btn-peek").classList.add("hidden");
+    }
+  },
+
+  /* TTS can't do its job when it is hard-broken OR only robotic voices exist;
+   * in both states the grown-up peek is the sanctioned, star-free fallback. */
+  get unusable() {
+    return this.broken || this.poorVoicesOnly;
+  },
+
+  rate(mult = 1) {
+    return Math.min(1.3, Math.max(0.45, this.baseRate * mult));
+  },
+
+  _utter(text, mult) {
+    const utt = new SpeechSynthesisUtterance(text);
+    if (this.chosenVoice) {
+      utt.voice = this.chosenVoice;
+      utt.lang = this.chosenVoice.lang;   // match lang to voice: avoids mangling
+    } else {
+      utt.lang = "en-US";
+    }
+    utt.rate = this.rate(mult);
+    utt.pitch = 1.05;
+    return utt;
+  },
+
+  speak(text, mult = 1) {
     if (!this.available || this.broken || !text) return;
     try {
       speechSynthesis.cancel();
-      const utt = new SpeechSynthesisUtterance(text);
-      if (this.chosenVoice) utt.voice = this.chosenVoice;
-      utt.rate = rate;
-      utt.pitch = 1.05;
+      const utt = this._utter(text, mult);
       let started = false;
       utt.onstart = () => {
         started = true;
@@ -178,11 +257,7 @@ const tts = {
       }
       pieces.push(word);
       for (const piece of pieces) {
-        const utt = new SpeechSynthesisUtterance(piece);
-        if (this.chosenVoice) utt.voice = this.chosenVoice;
-        utt.rate = piece === word ? 0.9 : 0.75;
-        utt.pitch = 1.05;
-        speechSynthesis.speak(utt);
+        speechSynthesis.speak(this._utter(piece, piece === word ? 1 : 0.85));
       }
     } catch (e) {
       this.markBroken();
@@ -197,22 +272,39 @@ const tts = {
   },
 };
 
+function friendlyVoiceLabel(v) {
+  const net = v.localService === false ? " — online" : "";
+  return `${v.name} (${v.lang})${net}`;
+}
+
 function populateVoiceSelect() {
   const sel = $("voice-select");
+  if (!sel) return;
+  const previous = sel.value;
   sel.innerHTML = "";
   if (!tts.voices.length) {
     sel.appendChild(el("option", null, "No voices found"));
     return;
   }
-  const auto = el("option", null, "Automatic (recommended)");
+  const saved = localStorage.getItem("meshbee.voice");
+  const best = tts.voices[0];
+  const auto = el("option", null, `Automatic — ${best ? best.name : "best available"}`);
   auto.value = "";
   sel.appendChild(auto);
-  for (const v of tts.voices) {
-    const opt = el("option", null, `${v.name} (${v.lang})`);
+  for (const v of tts.voices) {   // already sorted best-first
+    const opt = el("option", null, friendlyVoiceLabel(v));
     opt.value = v.name;
-    if (localStorage.getItem("meshbee.voice") === v.name) opt.selected = true;
+    if (saved === v.name) opt.selected = true;
     sel.appendChild(opt);
   }
+  if (!saved && previous) sel.value = "";   // keep "Automatic" selected across refreshes
+}
+
+function syncRateSlider() {
+  const slider = $("rate-slider");
+  if (!slider) return;
+  slider.value = String(tts.baseRate);
+  $("rate-value").textContent = tts.baseRate.toFixed(2) + "×";
 }
 
 // ---------------------------------------------------------------------------
@@ -528,11 +620,11 @@ function presentWord() {
   setTimeout(() => tts.speak(entry.word), 50);
 }
 
-function replayWord(rate) {
+function replayWord(mult) {
   // During feedback, replay targets the word just answered — not the next one.
   const entry = state.answeredEntry || currentEntry();
   if (!entry) return;
-  tts.speak(entry.word, rate);
+  tts.speak(entry.word, mult);
 }
 
 async function useHint(kind) {
@@ -543,7 +635,7 @@ async function useHint(kind) {
   // The server masks the target word inside its own definition/sentence
   // (NFR-6); substitute it back in for speech only — never into the DOM.
   text = text.replace(/_{3,}/g, entry.word);
-  tts.speak(text, 0.95);
+  tts.speak(text, 1);
   $(kind === "definition" ? "btn-def" : "btn-sentence").classList.add("used");
   try {
     await api("POST", `/api/session/${state.session.id}/hint`, { kind });
@@ -558,7 +650,7 @@ async function openPeek() {
   $("peek-close").focus();
   try {
     await api("POST", `/api/session/${state.session.id}/hint`,
-      { kind: "peek", ttsBroken: tts.broken });
+      { kind: "peek", ttsBroken: tts.unusable });
   } catch (e) { /* non-fatal */ }
 }
 
@@ -911,7 +1003,7 @@ document.addEventListener("keydown", (ev) => {
   if (ev.key === "F2" || (ev.altKey && (ev.key === "r" || ev.key === "R"))) {
     ev.preventDefault(); replayWord(); return;
   }
-  if (ev.altKey && (ev.key === "s" || ev.key === "S")) { ev.preventDefault(); replayWord(0.55); return; }
+  if (ev.altKey && (ev.key === "s" || ev.key === "S")) { ev.preventDefault(); replayWord(SLOW_MULT); return; }
   if (ev.altKey && (ev.key === "d" || ev.key === "D")) { ev.preventDefault(); useHint("definition"); return; }
   if (ev.altKey && (ev.key === "e" || ev.key === "E")) { ev.preventDefault(); useHint("sentence"); return; }
 
@@ -957,7 +1049,7 @@ function wireEvents() {
 
   $("answer-form").addEventListener("submit", (ev) => { ev.preventDefault(); submitAnswer(); });
   $("btn-replay").addEventListener("click", () => replayWord());
-  $("btn-slow").addEventListener("click", () => replayWord(0.55));
+  $("btn-slow").addEventListener("click", () => replayWord(SLOW_MULT));
   $("btn-def").addEventListener("click", () => useHint("definition"));
   $("btn-sentence").addEventListener("click", () => useHint("sentence"));
   $("btn-peek").addEventListener("click", openPeek);
@@ -981,11 +1073,14 @@ function wireEvents() {
     $("confirm-overlay").classList.add("hidden");
   });
 
-  $("btn-settings").addEventListener("click", () => {
-    populateVoiceSelect();
+  function openVoiceSettings() {
+    tts.refreshVoices();          // re-rank with whatever has loaded by now
+    syncRateSlider();
     $("settings-overlay").classList.remove("hidden");
     $("voice-select").focus();
-  });
+  }
+  $("btn-settings").addEventListener("click", openVoiceSettings);
+  $("btn-voice").addEventListener("click", openVoiceSettings);
   $("settings-close").addEventListener("click", () => $("settings-overlay").classList.add("hidden"));
   $("voice-select").addEventListener("change", () => {
     const name = $("voice-select").value;
@@ -993,7 +1088,17 @@ function wireEvents() {
     else localStorage.removeItem("meshbee.voice");
     tts.pickVoice();
   });
-  $("voice-test").addEventListener("click", () => tts.speak("Hello! Let's practice spelling together."));
+  $("rate-slider").addEventListener("input", () => {
+    tts.baseRate = parseFloat($("rate-slider").value);
+    localStorage.setItem("meshbee.rate", String(tts.baseRate));
+    $("rate-value").textContent = tts.baseRate.toFixed(2) + "\u00d7";
+  });
+  $("voice-test").addEventListener("click", () =>
+    tts.speak("Necessary. It is necessary to wear a helmet."));
+  $("voice-banner-dismiss").addEventListener("click", () => {
+    localStorage.setItem("meshbee.poorVoiceNoticeDismissed", "1");
+    $("voice-banner").classList.add("hidden");
+  });
 }
 
 async function init() {
