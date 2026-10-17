@@ -63,12 +63,13 @@ server.py            thin checkout shim -> meshbee.server:main
 meshbee/             the installable package
   __init__.py
   server.py          stdlib HTTP server: JSON API + static file serving
-  static/            index.html, app.js, style.css (vanilla, no frameworks)
+  static/            index.html, app.js, letters.js, style.css (vanilla, no frameworks)
   corpus.sample.json small 15-word corpus, bundled; selected with --corpus sample
 corpus.json          full word corpus (authored separately; schema below; NOT bundled)
 data/                runtime JSON data (gitignored): profiles.json, lists.json,
                      progress-<profileId>.json — all written atomically
 test_server.py       unittest suite
+test_letterfilter.js node tests for the voice-spelling letter filter
 e2e_check.py         scripted end-to-end API verification
 ```
 
@@ -144,6 +145,41 @@ session becomes available once a profile has 3+ unmastered missed words.
   the word, then each letter with natural pauses, then the word again
   ("necessary… N, E, C, E, S, S, A, R, Y… necessary"). Free — the answer is
   already locked in. Hyphens/apostrophes are spoken by name.
+
+## Voice spelling (Chrome/Edge)
+
+Kids can **say letters out loud** instead of typing. Press the mic button
+next to the answer box to toggle listening (it pulses while live); say
+letters one at a time — "b", "ee", "see", "double u", "hyphen" — and they
+appear in the answer box. Spoken commands: **"submit"/"done"/"enter"**
+(check the answer), **"undo"/"backspace"/"delete"** (remove a letter),
+**"clear"/"start over"**, **"repeat"/"again"** (hear the word once more).
+
+Details and limits:
+
+- **Chrome/Edge only** (Web Speech Recognition). The mic button is hidden on
+  Firefox/Safari — typing always works everywhere.
+- **Privacy note**: while the mic is on, Chrome streams the audio to Google's
+  speech service for transcription. Typed mode is fully offline (TTS voices
+  may be network voices, but no microphone audio is involved). The mic is
+  push-to-talk: it only listens while the button is toggled on, and it
+  switches itself off whenever an answer is submitted or a new word appears.
+- **Remote deploys need HTTPS**: browsers only allow microphone access on
+  secure origins (`https://…`) or `localhost`. A LAN deploy over plain HTTP
+  will hide/fail the mic — typed mode is unaffected.
+- Letter homophones are post-filtered deterministically ("bee"→B, "why"→Y,
+  "are"→R, "cue"→Q, "zed"→Z, …; see `meshbee/static/letters.js`). Fast
+  letter runs that the recognizer glues together ("abc") are split
+  per-character. Only **final** recognition results commit letters — interim
+  text shows as a faint "Hearing: …" indicator.
+- **Echo protection**: recognition pauses automatically while MeshBee itself
+  is speaking, so the TTS voice can't type into the box.
+- Mic permission denied → a friendly note appears and the toggle turns off;
+  typing is unaffected.
+- Settings dialog has a **"Voice spelling (Chrome)"** toggle (default on
+  where supported, hidden elsewhere; persisted per device in localStorage).
+
+Headless tests for the letter filter: `node test_letterfilter.js`.
 
 ## Keyboard shortcuts
 
@@ -242,17 +278,9 @@ is also good (high-quality local voices, works offline).
 
 ## Roadmap
 
-- **Voice-spelling input** (kid says letters aloud; letters appear in the
-  answer box). Planned approach: Web Speech Recognition
-  (`webkitSpeechRecognition` / `SpeechRecognition`) in continuous mode with a
-  letter-name grammar/post-filter (A–Z plus "hyphen" and "apostrophe"),
-  confidence thresholding, and a visible push-to-talk toggle. The frontend is
-  already structured for it: the answer box is owned by a small
-  `answerInput` controller in `app.js` (`appendLetter` / `backspace` /
-  `clear` / `submit`), so a recognition engine feeds letters through the same
-  API the keyboard uses — no practice-flow changes needed. Recognition is
-  Chrome/Edge-only and usually cloud-backed, so it will ship as an optional
-  enhancement with the typed path always available.
+- **Smarter homophone handling** for voice spelling: letter-name grammar
+  biasing and per-kid pronunciation calibration, building on the existing
+  `letters.js` filter and the `answerInput` controller seam.
 
 ## PRD deviations / flags for the Product Owner
 

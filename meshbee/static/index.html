@@ -40,6 +40,11 @@
       <text x="12" y="14.5" text-anchor="middle" font-size="10.5" font-weight="bold" fill="currentColor">A·B</text>
       <path d="M5 19.5h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="3 2.2"/>
     </symbol>
+    <symbol id="icon-mic" viewBox="0 0 24 24">
+      <rect x="9" y="2.5" width="6" height="11" rx="3" fill="currentColor"/>
+      <path d="M5.5 11a6.5 6.5 0 0013 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <path d="M12 17.5v3.5M8.5 21h7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </symbol>
     <symbol id="icon-speaker" viewBox="0 0 24 24">
       <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/>
       <path d="M16 8.5a4.5 4.5 0 010 7M18.5 6a8 8 0 010 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
@@ -235,12 +240,17 @@
             <label class="visually-hidden" for="answer-input">Type the word you heard</label>
             <input id="answer-input" type="text" placeholder="Type the word…"
                    autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+            <button id="btn-mic" type="button" class="btn-mic hidden" aria-pressed="false"
+                    title="Spell by voice" aria-label="Spell by voice (say letters out loud)">
+              <svg class="icon" aria-hidden="true"><use href="#icon-mic"/></svg>
+            </button>
             <button id="btn-submit" type="submit" class="btn btn-primary btn-large">Check it!</button>
           </form>
+          <p id="voice-pending" class="voice-pending hidden" aria-live="polite"></p>
 
           <div id="feedback" class="feedback hidden" aria-live="assertive"></div>
         </div>
-        <p class="kbd-help">Enter = check &nbsp;·&nbsp; F2 or Alt+R = hear again &nbsp;·&nbsp; Alt+S = slow &nbsp;·&nbsp; Alt+D = definition &nbsp;·&nbsp; Alt+E = sentence</p>
+        <p class="kbd-help">Enter = check &nbsp;·&nbsp; F2 or Alt+R = hear again &nbsp;·&nbsp; Alt+S = slow &nbsp;·&nbsp; Alt+D = definition &nbsp;·&nbsp; Alt+E = sentence &nbsp;·&nbsp; mic button = spell by voice (say "submit", "undo", "clear", "repeat")</p>
       </section>
 
       <!-- ============ Summary ============ -->
@@ -325,6 +335,11 @@
         <input id="rate-slider" type="range" min="0.6" max="1.1" step="0.05" value="0.9"
                aria-describedby="rate-value">
         <div class="rate-scale" aria-hidden="true"><span>Slower</span><span>Faster</span></div>
+        <label class="check-row hidden" id="voice-spelling-row">
+          <input type="checkbox" id="voice-spelling-toggle" checked>
+          <span>Voice spelling (Chrome) — say letters out loud with the
+          <svg class="icon" aria-hidden="true"><use href="#icon-mic"/></svg> button</span>
+        </label>
         <div class="btn-row center">
           <button id="voice-test" class="btn btn-ghost">
             <svg class="icon" aria-hidden="true"><use href="#icon-speaker"/></svg> Test voice
@@ -337,6 +352,7 @@
     <div id="confetti-layer" aria-hidden="true"></div>
   </div>
 
+  <script src="/letters.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>

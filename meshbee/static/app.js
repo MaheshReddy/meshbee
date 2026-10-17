@@ -221,6 +221,7 @@ const tts = {
   speak(text, mult = 1) {
     if (!this.available || this.broken || !text) return;
     try {
+      voiceInput.pauseForTTS();   // echo protection: never listen while talking
       speechSynthesis.cancel();
       const utt = this._utter(text, mult);
       let started = false;
@@ -247,6 +248,7 @@ const tts = {
   spellOut(word) {
     if (!this.available || this.broken || !word) return;
     try {
+      voiceInput.pauseForTTS();   // echo protection
       speechSynthesis.cancel();
       const pieces = [word];
       for (const ch of word) {
@@ -331,13 +333,214 @@ const answerInput = {
 };
 
 // ---------------------------------------------------------------------------
+// Voice-spelling input (Chrome/Edge) — kid says letters, letters appear.
+// Final recognition results are parsed by MeshBeeLetters.parseTranscript and
+// fed through the answerInput controller above (never straight to the DOM).
+// Lifecycle rules (reviewed for restart loops):
+//   - onend restarts ONLY while (active && !pausedForTTS && !denied)
+//   - permission denial sets denied + active=false  -> no restart
+//   - TTS speaking aborts recognition (echo protection); a poll resumes it
+//     once the synth queue is quiet
+//   - submit/advance force-deactivate the mic
+// ---------------------------------------------------------------------------
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+
+const voiceInput = {
+  supported: !!SR && typeof MeshBeeLetters !== "undefined",
+  active: false,          // user wants the mic on
+  listening: false,       // a recognizer session is actually running
+  pausedForTTS: false,
+  denied: false,
+  rec: null,
+  failStreak: 0,
+  _restartTimer: null,
+  _resumePoll: null,
+
+  prefEnabled() {
+    return localStorage.getItem("meshbee.voiceSpelling") !== "0";  // default ON
+  },
+
+  init() {
+    if (!this.supported) return;   // button + settings row stay hidden
+    $("voice-spelling-row").classList.remove("hidden");
+    $("voice-spelling-toggle").checked = this.prefEnabled();
+    this.syncButtonVisibility();
+  },
+
+  syncButtonVisibility() {
+    if (!this.supported) return;
+    $("btn-mic").classList.toggle("hidden", !this.prefEnabled());
+    if (!this.prefEnabled()) this.deactivate();
+  },
+
+  toggle() {
+    if (this.active) {
+      this.deactivate();
+    } else {
+      this.denied = false;        // explicit user press: let them retry permission
+      this.failStreak = 0;
+      this.active = true;
+      this._start();
+      this._syncUI();
+    }
+  },
+
+  _start() {
+    if (!this.supported || !this.active || this.listening) return;
+    try {
+      const rec = new SR();
+      this.rec = rec;
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.lang = "en-US";
+      rec.onresult = (ev) => this._onResult(ev);
+      rec.onerror = (ev) => this._onError(ev);
+      rec.onend = () => {
+        this.listening = false;
+        this._syncUI();
+        // Chrome ends sessions after silence: restart while still toggled on.
+        if (this.active && !this.pausedForTTS && !this.denied) {
+          clearTimeout(this._restartTimer);
+          this._restartTimer = setTimeout(() => this._start(), 300);
+        }
+      };
+      rec.start();
+      this.listening = true;
+      this._syncUI();
+    } catch (e) {
+      this.listening = false;     // start() throws if already running — benign
+    }
+  },
+
+  _abortRec() {
+    clearTimeout(this._restartTimer);
+    if (this.rec) {
+      try { this.rec.abort(); } catch (e) { /* already stopped */ }
+      this.rec = null;
+    }
+    this.listening = false;
+  },
+
+  deactivate() {
+    this.active = false;
+    this.pausedForTTS = false;
+    this._abortRec();
+    this._showPending("");
+    this._syncUI();
+  },
+
+  /* Echo protection: never listen while the app itself is talking. */
+  pauseForTTS() {
+    if (!this.active) return;
+    this.pausedForTTS = true;
+    this._abortRec();
+    this._syncUI();
+    if (this._resumePoll) return;
+    this._resumePoll = setInterval(() => {
+      const synthQuiet = !("speechSynthesis" in window) ||
+        (!speechSynthesis.speaking && !speechSynthesis.pending);
+      if (synthQuiet) {
+        clearInterval(this._resumePoll);
+        this._resumePoll = null;
+        if (this.active && this.pausedForTTS) {
+          this.pausedForTTS = false;
+          this._start();
+        }
+      }
+    }, 250);
+  },
+
+  _onError(ev) {
+    if (ev.error === "not-allowed" || ev.error === "service-not-allowed") {
+      this.denied = true;
+      this.deactivate();
+      this._showPending("The microphone isn't allowed in this browser — you can keep typing!");
+    } else if (ev.error === "network") {
+      this.deactivate();
+      this._showPending("Voice spelling needs the internet — you can keep typing!");
+    }
+    // "no-speech" / "aborted": benign; onend handles any restart.
+  },
+
+  _onResult(ev) {
+    // Ignore anything while feedback is up or we're mid-submit.
+    if (state.advanceArmed || state.pendingAnswer) return;
+    let interim = "";
+    for (let i = ev.resultIndex; i < ev.results.length; i++) {
+      const res = ev.results[i];
+      if (res.isFinal) this._applyFinal(res[0].transcript);
+      else interim += res[0].transcript;
+    }
+    if (interim) this._showPending("Hearing: " + interim.trim().toLowerCase());
+  },
+
+  _applyFinal(transcript) {
+    const { ops, unmatched } = MeshBeeLetters.parseTranscript(transcript);
+    if (!ops.length) {
+      if (unmatched.length) {
+        this.failStreak += 1;
+        if (this.failStreak >= 3) {
+          this._showPending("Didn't catch that — try one letter at a time");
+          $("answer-input").classList.add("shake");
+          setTimeout(() => $("answer-input").classList.remove("shake"), 450);
+        }
+      }
+      return;
+    }
+    this.failStreak = 0;
+    this._showPending("");
+    for (const op of ops) {
+      if (state.advanceArmed || state.pendingAnswer) break;   // submit mid-batch
+      if (op.type === "letter") {
+        answerInput.appendLetter(op.ch);
+        popAnswerInput();
+      } else if (op.cmd === "backspace") {
+        answerInput.backspace();
+      } else if (op.cmd === "clear") {
+        answerInput.clear();
+      } else if (op.cmd === "replay") {
+        replayWord();          // triggers TTS -> pauseForTTS echo protection
+      } else if (op.cmd === "submit") {
+        answerInput.submit();  // submitAnswer deactivates the mic
+      }
+    }
+  },
+
+  _showPending(text) {
+    const node = $("voice-pending");
+    if (!node) return;
+    node.textContent = text;
+    node.classList.toggle("hidden", !text);
+  },
+
+  _syncUI() {
+    const btn = $("btn-mic");
+    if (!btn) return;
+    btn.classList.toggle("listening", this.active && this.listening);
+    btn.classList.toggle("paused", this.active && !this.listening);
+    btn.setAttribute("aria-pressed", String(this.active));
+    btn.title = this.active ? "Stop voice spelling" : "Spell by voice";
+  },
+};
+
+function popAnswerInput() {
+  const input = $("answer-input");
+  input.classList.remove("letter-pop");
+  void input.offsetWidth;              // restart the animation
+  input.classList.add("letter-pop");
+}
+
+// ---------------------------------------------------------------------------
 // Screen router
 // ---------------------------------------------------------------------------
 const SCREENS = ["screen-profiles", "screen-source", "screen-practice", "screen-summary", "screen-lists"];
 
 function showScreen(id) {
   for (const s of SCREENS) $(s).classList.toggle("hidden", s !== id);
-  if (id !== "screen-practice") clearAutoAdvance();
+  if (id !== "screen-practice") {
+    clearAutoAdvance();
+    voiceInput.deactivate();
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -606,6 +809,7 @@ function presentWord() {
   state.advanceArmed = false;
   state.pendingAnswer = false;
   state.answeredEntry = null;
+  voiceInput.deactivate();     // mic always starts a question off (push-to-talk)
   $("feedback").classList.add("hidden");
   $("feedback").innerHTML = "";
   answerInput.clear();
@@ -661,6 +865,7 @@ async function submitAnswer() {
   if (!attempt) { answerInput.focus(); return; }
   const answered = currentEntry();
   state.pendingAnswer = true;
+  voiceInput.deactivate();     // auto-stop the mic once the answer is locked in
   answerInput.setEnabled(false);
   let res;
   try {
@@ -1048,6 +1253,7 @@ function wireEvents() {
   $("list-cancel").addEventListener("click", () => $("list-form").classList.add("hidden"));
 
   $("answer-form").addEventListener("submit", (ev) => { ev.preventDefault(); submitAnswer(); });
+  $("btn-mic").addEventListener("click", () => voiceInput.toggle());
   $("btn-replay").addEventListener("click", () => replayWord());
   $("btn-slow").addEventListener("click", () => replayWord(SLOW_MULT));
   $("btn-def").addEventListener("click", () => useHint("definition"));
@@ -1099,11 +1305,17 @@ function wireEvents() {
     localStorage.setItem("meshbee.poorVoiceNoticeDismissed", "1");
     $("voice-banner").classList.add("hidden");
   });
+  $("voice-spelling-toggle").addEventListener("change", () => {
+    localStorage.setItem("meshbee.voiceSpelling",
+      $("voice-spelling-toggle").checked ? "1" : "0");
+    voiceInput.syncButtonVisibility();
+  });
 }
 
 async function init() {
   wireEvents();
   tts.init();
+  voiceInput.init();
   await loadProfiles();
   const rememberedId = localStorage.getItem("meshbee.profileId");
   const remembered = state.profiles.find((p) => p.id === rememberedId);
