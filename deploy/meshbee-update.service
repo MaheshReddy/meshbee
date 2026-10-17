@@ -1,0 +1,12 @@
+# MeshBee — one-shot updater, driven by meshbee-update.timer.
+# Runs as root: it installs wheels into /opt/meshbee/venv and restarts
+# meshbee.service. The script itself is stdlib-only and talks only to
+# api.github.com / github.com over HTTPS.
+[Unit]
+Description=MeshBee auto-updater (polls the rolling GitHub release)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /opt/meshbee/update.py

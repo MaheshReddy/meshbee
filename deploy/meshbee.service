@@ -1,0 +1,28 @@
+# MeshBee — main service unit.
+# Install (as root):  cp meshbee.service /etc/systemd/system/
+# See deploy/README.md for full host setup.
+[Unit]
+Description=MeshBee spelling practice server
+After=network.target
+
+[Service]
+Type=simple
+User=meshbee
+Group=meshbee
+ExecStart=/opt/meshbee/venv/bin/meshbee --port 8765 --data-dir /var/lib/meshbee
+Restart=on-failure
+RestartSec=3
+
+# Hardening — the app only needs to read its venv and write its data dir.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+ReadWritePaths=/var/lib/meshbee
+
+[Install]
+WantedBy=multi-user.target

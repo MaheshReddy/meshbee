@@ -28,11 +28,16 @@ from urllib.parse import unquote, urlparse
 
 logger = logging.getLogger("meshbee")
 
-# Static assets + the sample corpus ship as package data (importlib.resources),
-# so the installed wheel is fully self-contained.
+# Static assets + corpora ship as package data (importlib.resources), so the
+# installed wheel is fully self-contained.
 _PKG = resources.files("meshbee")
 STATIC_ROOT = _PKG / "static"
 SAMPLE_CORPUS = "sample"  # --corpus sample -> bundled corpus.sample.json
+
+# Version of the on-disk JSON data layout (profiles/lists/progress files).
+# Written into every persisted file; loaders accept <= SCHEMA_VERSION and
+# refuse newer files with a clear error (no migration framework yet).
+SCHEMA_VERSION = 1
 
 SESSION_SIZE = 10
 MIN_SESSION_WORDS = 3
@@ -281,6 +286,29 @@ def mask_word_in_text(text, word):
 # Store + application
 # ---------------------------------------------------------------------------
 
+def app_version() -> str:
+    """Installed package version, falling back to the source tree's."""
+    try:
+        from importlib.metadata import version
+        return version("meshbee")
+    except Exception:
+        try:
+            from meshbee import __version__
+            return __version__
+        except Exception:
+            return "unknown"
+
+
+def build_sha() -> str:
+    """Git sha baked in at CI build time (meshbee/_build_info.py, generated,
+    gitignored); 'dev' when running from a plain checkout."""
+    try:
+        from meshbee._build_info import BUILD_SHA
+        return BUILD_SHA
+    except Exception:
+        return "dev"
+
+
 class ApiError(Exception):
     def __init__(self, status: int, message: str, extra=None):
         super().__init__(message)
@@ -300,19 +328,39 @@ class Store:
     def _path(self, name: str) -> str:
         return os.path.join(self.data_dir, name)
 
+    @staticmethod
+    def _check_schema(data, path):
+        """Missing schemaVersion -> 1 (pre-versioning files). Newer than this
+        build -> clear, loud error instead of silent corruption."""
+        found = data.get("schemaVersion", 1) if isinstance(data, dict) else 1
+        if found > SCHEMA_VERSION:
+            raise ApiError(
+                500,
+                f"{os.path.basename(path)} was written with schemaVersion {found}, but this "
+                f"MeshBee only understands schemaVersion {SCHEMA_VERSION}. "
+                "Update MeshBee (or restore an older data backup).")
+        return data
+
+    def _load_checked(self, path: str, default: dict) -> dict:
+        return self._check_schema(load_json(path, default), path)
+
     # profiles -------------------------------------------------------------
     def load_profiles(self) -> list:
-        return load_json(self._path("profiles.json"), {"profiles": []}).get("profiles", [])
+        path = self._path("profiles.json")
+        return self._load_checked(path, {"profiles": []}).get("profiles", [])
 
     def save_profiles(self, profiles: list) -> None:
-        atomic_write_json(self._path("profiles.json"), {"profiles": profiles})
+        atomic_write_json(self._path("profiles.json"),
+                          {"schemaVersion": SCHEMA_VERSION, "profiles": profiles})
 
     # lists ----------------------------------------------------------------
     def load_lists(self) -> list:
-        return load_json(self._path("lists.json"), {"lists": []}).get("lists", [])
+        path = self._path("lists.json")
+        return self._load_checked(path, {"lists": []}).get("lists", [])
 
     def save_lists(self, lists: list) -> None:
-        atomic_write_json(self._path("lists.json"), {"lists": lists})
+        atomic_write_json(self._path("lists.json"),
+                          {"schemaVersion": SCHEMA_VERSION, "lists": lists})
 
     # per-profile progress ---------------------------------------------------
     def _progress_path(self, profile_id: str) -> str:
@@ -320,11 +368,14 @@ class Store:
         return self._path(f"progress-{safe}.json")
 
     def load_progress(self, profile_id: str) -> dict:
-        return load_json(self._progress_path(profile_id), {
+        path = self._progress_path(profile_id)
+        return self._load_checked(path, {
+            "schemaVersion": SCHEMA_VERSION,
             "sessionsPlayed": 0, "totalStars": 0, "bestStreak": 0, "words": {},
         })
 
     def save_progress(self, profile_id: str, progress: dict) -> None:
+        progress["schemaVersion"] = SCHEMA_VERSION
         atomic_write_json(self._progress_path(profile_id), progress)
 
     def delete_progress(self, profile_id: str) -> None:
@@ -335,7 +386,7 @@ class Store:
 
 
 class ServerApp:
-    def __init__(self, data_dir: str, corpus_path: str):
+    def __init__(self, data_dir: str, corpus_path: str | None = None):
         self.store = Store(data_dir)
         self.corpus_path = corpus_path
         self.corpus_words: list = []
@@ -344,20 +395,38 @@ class ServerApp:
         self.load_corpus()
 
     # corpus -----------------------------------------------------------------
+    def _resolve_corpus(self):
+        """Resolution order: explicit --corpus PATH ('sample' = bundled test
+        corpus) -> ./corpus.json in CWD (dev convenience) -> packaged
+        meshbee/corpus.json -> None (empty corpus with a warning)."""
+        cp = self.corpus_path
+        if cp == SAMPLE_CORPUS:
+            return json.loads((_PKG / "corpus.sample.json").read_text(encoding="utf-8")), \
+                "bundled corpus.sample.json"
+        if cp:
+            if not os.path.exists(cp):
+                logger.warning("Corpus file %s not found — serving an empty corpus. "
+                               "Tier practice will be unavailable until it is installed.", cp)
+                return None, None
+            return load_json(cp, {}), cp
+        cwd_corpus = os.path.join(os.getcwd(), "corpus.json")
+        if os.path.exists(cwd_corpus):
+            return load_json(cwd_corpus, {}), cwd_corpus
+        packaged = _PKG / "corpus.json"
+        try:
+            if packaged.is_file():
+                return json.loads(packaged.read_text(encoding="utf-8")), "bundled corpus.json"
+        except (OSError, ValueError) as exc:
+            logger.warning("Failed to read bundled corpus (%s)", exc)
+        logger.warning("No corpus found (no --corpus flag, no ./corpus.json, no bundled "
+                       "corpus) — serving an empty corpus.")
+        return None, None
+
     def load_corpus(self) -> None:
-        if self.corpus_path == SAMPLE_CORPUS:
-            raw = (_PKG / "corpus.sample.json").read_text(encoding="utf-8")
-            data = json.loads(raw)
-            source = "bundled corpus.sample.json"
-        elif not os.path.exists(self.corpus_path):
-            logger.warning("Corpus file %s not found — serving an empty corpus. "
-                           "Tier practice will be unavailable until it is installed.",
-                           self.corpus_path)
+        data, source = self._resolve_corpus()
+        if data is None:
             self.corpus_words = []
             return
-        else:
-            data = load_json(self.corpus_path, {})
-            source = self.corpus_path
         words = []
         for item in data.get("words", []):
             word = (item.get("word") or "").strip()
@@ -373,6 +442,14 @@ class ServerApp:
             })
         self.corpus_words = words
         logger.info("Loaded corpus: %d words from %s", len(words), source)
+
+    def version_info(self) -> dict:
+        return {
+            "version": app_version(),
+            "build": build_sha(),
+            "corpusWords": len(self.corpus_words),
+            "schemaVersion": SCHEMA_VERSION,
+        }
 
     def corpus_meta(self) -> dict:
         tiers = {str(t): 0 for t in VALID_TIERS}
@@ -778,6 +855,11 @@ def r_corpus_meta(match, body):
     return APP.corpus_meta()
 
 
+@route("GET", r"/api/version")
+def r_version(match, body):
+    return APP.version_info()
+
+
 @route("GET", r"/api/profiles")
 def r_profiles_get(match, body):
     return {"profiles": APP.list_profiles()}
@@ -955,9 +1037,10 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="MeshBee spelling practice server")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--data-dir", default="./data")
-    parser.add_argument("--corpus", default="./corpus.json",
-                        help="Path to corpus.json, or the literal value 'sample' "
-                             "to use the small bundled test corpus")
+    parser.add_argument("--corpus", default=None,
+                        help="Path to a corpus.json, or 'sample' for the small bundled "
+                             "test corpus. Default: ./corpus.json if present, else the "
+                             "corpus bundled in the package.")
     parser.add_argument("--host", default="127.0.0.1")
     args = parser.parse_args(argv)
 

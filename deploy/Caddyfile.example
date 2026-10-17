@@ -1,0 +1,9 @@
+# MeshBee behind Caddy — automatic HTTPS reverse proxy.
+#
+# Replace the hostname with your real domain (DNS must point at this host).
+# Caddy obtains and renews the TLS certificate automatically.
+# HTTPS matters: the voice-spelling microphone only works on secure origins.
+
+spelling.example.com {
+	reverse_proxy 127.0.0.1:8765
+}

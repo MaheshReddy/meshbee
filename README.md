@@ -4,6 +4,10 @@ A self-contained spelling bee practice website: hear a word, type it, get
 friendly letter-by-letter feedback. One Python process serves everything —
 no database, no runtime pip dependencies, no build step, no CDN assets.
 
+- Repo: **https://github.com/MaheshReddy/meshbee** · License: **MIT**
+- Deploys: **main-on-green** — every green push to `main` refreshes a rolling
+  GitHub release that the host auto-installs (see *Hosting & auto-deploy*).
+
 MeshBee is a proper installable Python package (`meshbee`), managed with
 [uv](https://docs.astral.sh/uv/). The runtime stays **stdlib-only** — the
 packaging exists purely for build/deploy ergonomics.
@@ -43,10 +47,27 @@ deploy artifact.
 |------|---------|---------|
 | `--port` | `8765` | HTTP port |
 | `--data-dir` | `./data` | Where profiles/lists/progress JSON files live |
-| `--corpus` | `./corpus.json` | Word corpus file. If missing, the app runs with a friendly "no words installed" notice (custom lists still work). The literal value `sample` uses the small bundled test corpus. |
+| `--corpus` | *(auto)* | Corpus resolution: this flag (a path, or `sample` for the bundled test corpus) → `./corpus.json` in the working directory (dev convenience) → the corpus bundled in the package → empty with a friendly notice (custom lists still work). |
 | `--host` | `127.0.0.1` | Bind address (use `0.0.0.0` to serve the LAN) |
 
 Requirements: Python 3.9+ (stdlib only at runtime). Frontend: Chrome / Edge / Safari.
+
+## Hosting & auto-deploy (main-on-green)
+
+- **CI** (`.github/workflows/ci.yml`): every PR and push to `main` runs the
+  unit tests (Python 3.9 + 3.12), the node letter-filter tests, and the
+  end-to-end API check.
+- **Rolling release**: on every *green* push to `main`, CI bakes the git sha
+  into `meshbee/_build_info.py`, builds the wheel, and recreates the
+  `latest` prerelease with the wheel attached and `commit: <sha>` in the
+  body. No tag ceremony — merged means (about to be) deployed.
+- **Host updater** (`deploy/update.py`, stdlib-only): a systemd timer polls
+  the release every 10 minutes; on a new sha it backs up the data dir,
+  installs the wheel into the venv, restarts the service, and health-checks
+  `GET /api/version` (the reported `build` must equal the new sha). Failure →
+  automatic rollback to the previous wheel and the sha is never retried.
+- Full host setup, rollback, and the "deploy assets never self-update"
+  policy: **`deploy/README.md`**.
 
 ## Tests
 
@@ -64,13 +85,17 @@ meshbee/             the installable package
   __init__.py
   server.py          stdlib HTTP server: JSON API + static file serving
   static/            index.html, app.js, letters.js, style.css (vanilla, no frameworks)
+  corpus.json        the real word corpus — bundled into the wheel (package data)
   corpus.sample.json small 15-word corpus, bundled; selected with --corpus sample
-corpus.json          full word corpus (authored separately; schema below; NOT bundled)
+word_list.txt        corpus provenance (source word list)
 data/                runtime JSON data (gitignored): profiles.json, lists.json,
-                     progress-<profileId>.json — all written atomically
+                     progress-<profileId>.json — atomic writes, schemaVersion: 1
 test_server.py       unittest suite
 test_letterfilter.js node tests for the voice-spelling letter filter
 e2e_check.py         scripted end-to-end API verification
+.github/workflows/   CI: test (3.9 + 3.12) and the rolling-release job
+deploy/              host assets (systemd units, stdlib updater, Caddyfile) —
+                     installed once by a human, never self-updated
 ```
 
 ## Corpus schema
@@ -91,6 +116,7 @@ All request/response bodies are JSON.
 | Method & path | Purpose |
 |---|---|
 | `GET /api/corpus/meta` | `{loaded, wordCount, tiers, tierNames, categories}` |
+| `GET /api/version` | `{version, build, corpusWords, schemaVersion}` — used by the host updater's health check (`build` is the CI-baked git sha, `"dev"` in a checkout) |
 | `GET /api/profiles` | List profiles |
 | `POST /api/profiles` | Create: `{name, avatar:{color,icon}}` (duplicate names → 409) |
 | `PATCH /api/profiles/{id}` | Rename / change avatar |
@@ -107,7 +133,10 @@ All request/response bodies are JSON.
 
 Sessions live in server memory (an interrupted session simply isn't counted);
 all progress, profiles, and lists are flat JSON files written atomically
-(temp file + `os.replace`).
+(temp file + `os.replace`). Every persisted file carries
+`"schemaVersion": 1`; files without the field are treated as version 1, and
+files from a *newer* MeshBee are refused with a clear error (restore a
+backup or update the app) — no silent corruption.
 
 ### Grading rules
 

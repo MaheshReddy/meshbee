@@ -1,0 +1,1251 @@
+{
+  "version": 1,
+  "words": [
+    {
+      "word": "because",
+      "tier": 1,
+      "definition": "for the reason that",
+      "sentence": "We stayed inside because it was raining.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "knuckle",
+      "tier": 1,
+      "definition": "a joint in your finger",
+      "sentence": "He scraped his knuckle climbing the fence.",
+      "category": "silent-letters"
+    },
+    {
+      "word": "stomach",
+      "tier": 1,
+      "definition": "the body part where food goes after you eat",
+      "sentence": "My stomach growled before lunch.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "calendar",
+      "tier": 1,
+      "definition": "a chart showing days, weeks, and months",
+      "sentence": "She marked her birthday on the calendar.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "island",
+      "tier": 1,
+      "definition": "land surrounded by water on all sides",
+      "sentence": "The boat sailed to a small island.",
+      "category": "silent-letters"
+    },
+    {
+      "word": "answer",
+      "tier": 1,
+      "definition": "a reply to a question",
+      "sentence": "Raise your hand if you know the answer.",
+      "category": "silent-letters"
+    },
+    {
+      "word": "library",
+      "tier": 1,
+      "definition": "a place where you borrow books",
+      "sentence": "We walked to the library after school.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "enough",
+      "tier": 1,
+      "definition": "as much as is needed",
+      "sentence": "There was enough pizza for everyone.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "tomorrow",
+      "tier": 1,
+      "definition": "the day after today",
+      "sentence": "Our field trip is tomorrow morning.",
+      "category": "double-consonants"
+    },
+    {
+      "word": "piece",
+      "tier": 1,
+      "definition": "a part of something larger",
+      "sentence": "May I have a piece of cake, not peace and quiet?",
+      "category": "homophones"
+    },
+    {
+      "word": "necessary",
+      "tier": 2,
+      "definition": "needed; something you must have or do",
+      "sentence": "It is necessary to wear a helmet when biking.",
+      "category": "double-consonants"
+    },
+    {
+      "word": "mischievous",
+      "tier": 2,
+      "definition": "playfully causing trouble",
+      "sentence": "The mischievous puppy hid my shoe.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "boundary",
+      "tier": 2,
+      "definition": "a line marking the edge of an area",
+      "sentence": "The fence marks the boundary of our yard.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "privilege",
+      "tier": 2,
+      "definition": "a special right or advantage",
+      "sentence": "Staying up late was a weekend privilege.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "occasion",
+      "tier": 2,
+      "definition": "a special event or time",
+      "sentence": "Grandma's visit was a happy occasion.",
+      "category": "double-consonants"
+    },
+    {
+      "word": "committee",
+      "tier": 2,
+      "definition": "a group chosen to plan or decide things",
+      "sentence": "The committee planned the school fair.",
+      "category": "double-consonants"
+    },
+    {
+      "word": "embarrass",
+      "tier": 2,
+      "definition": "to make someone feel awkward or ashamed",
+      "sentence": "Tripping on stage can embarrass anyone.",
+      "category": "double-consonants"
+    },
+    {
+      "word": "rhythm",
+      "tier": 2,
+      "definition": "a repeated pattern of sound or movement",
+      "sentence": "Clap along to the rhythm of the song.",
+      "category": "greek-latin-roots"
+    },
+    {
+      "word": "separate",
+      "tier": 2,
+      "definition": "to divide or keep apart",
+      "sentence": "Please separate the red blocks from the blue ones.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "restaurant",
+      "tier": 2,
+      "definition": "a place where you buy and eat meals",
+      "sentence": "We ate dinner at a new restaurant.",
+      "category": "loanwords"
+    },
+    {
+      "word": "silhouette",
+      "tier": 3,
+      "definition": "a dark outline seen against a bright background",
+      "sentence": "A silhouette of a cat appeared in the window.",
+      "category": "loanwords"
+    },
+    {
+      "word": "camouflage",
+      "tier": 3,
+      "definition": "coloring that helps something blend in and hide",
+      "sentence": "The lizard's camouflage made it hard to spot.",
+      "category": "loanwords"
+    },
+    {
+      "word": "pneumonia",
+      "tier": 3,
+      "definition": "a serious illness of the lungs",
+      "sentence": "He missed two weeks of school with pneumonia.",
+      "category": "greek-latin-roots"
+    },
+    {
+      "word": "bouquet",
+      "tier": 3,
+      "definition": "a bunch of flowers gathered together",
+      "sentence": "She picked a bouquet of daisies for Mom.",
+      "category": "loanwords"
+    },
+    {
+      "word": "lieutenant",
+      "tier": 3,
+      "definition": "an officer rank in the military or police",
+      "sentence": "The lieutenant led the parade down Main Street.",
+      "category": "loanwords"
+    },
+    {
+      "word": "questionnaire",
+      "tier": 3,
+      "definition": "a written set of questions to answer",
+      "sentence": "Each student filled out a questionnaire about lunch choices.",
+      "category": "double-consonants"
+    },
+    {
+      "word": "reservoir",
+      "tier": 3,
+      "definition": "a large lake where water is stored",
+      "sentence": "The town's water comes from a mountain reservoir.",
+      "category": "loanwords"
+    },
+    {
+      "word": "connoisseur",
+      "tier": 3,
+      "definition": "an expert who knows a subject very well",
+      "sentence": "Uncle Ray is a connoisseur of ice cream flavors.",
+      "category": "loanwords"
+    },
+    {
+      "word": "gnaw",
+      "tier": 3,
+      "definition": "to bite or chew on something again and again",
+      "sentence": "The beaver loves to gnaw on branches.",
+      "category": "silent-letters"
+    },
+    {
+      "word": "subtle",
+      "tier": 3,
+      "definition": "not obvious; hard to notice",
+      "sentence": "There was a subtle hint of mint in the cookie.",
+      "category": "silent-letters"
+    },
+    {
+      "word": "ran",
+      "tier": 1,
+      "definition": "moved very fast using your legs",
+      "sentence": "We ran across the playground at recess.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "rod",
+      "tier": 1,
+      "definition": "a long, thin stick or pole",
+      "sentence": "Grandpa brought his fishing rod to the lake.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "shy",
+      "tier": 1,
+      "definition": "feeling nervous around new people",
+      "sentence": "The shy kitten hid under the porch.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "drink",
+      "tier": 1,
+      "definition": "to swallow a liquid",
+      "sentence": "Please drink some water after soccer practice.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "mist",
+      "tier": 1,
+      "definition": "tiny drops of water floating in the air",
+      "sentence": "Morning mist covered the quiet meadow.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "still",
+      "tier": 1,
+      "definition": "not moving at all",
+      "sentence": "The pond was still and calm at sunrise.",
+      "category": "double-consonants"
+    },
+    {
+      "word": "pump",
+      "tier": 1,
+      "definition": "a tool that pushes air or water",
+      "sentence": "Dad used a pump to fill my bike tires.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "sharp",
+      "tier": 1,
+      "definition": "having an edge that can cut easily",
+      "sentence": "Be careful with the sharp scissors in art class.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "rich",
+      "tier": 1,
+      "definition": "having lots of money or good things",
+      "sentence": "The soil in our garden is rich and dark.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "shoot",
+      "tier": 1,
+      "definition": "a new young plant stem",
+      "sentence": "A green shoot poked out of the flowerpot.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "claws",
+      "tier": 1,
+      "definition": "sharp curved nails on an animal's paws",
+      "sentence": "The hawk gripped the branch with its claws.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "winter",
+      "tier": 1,
+      "definition": "the coldest season of the year",
+      "sentence": "We build snow forts every winter.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "yellow",
+      "tier": 1,
+      "definition": "the color of the sun and lemons",
+      "sentence": "She drew a yellow duck in art class.",
+      "category": "double-consonants"
+    },
+    {
+      "word": "mouth",
+      "tier": 1,
+      "definition": "the part of the face used for eating and talking",
+      "sentence": "The river's mouth opens into the sea.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "paper",
+      "tier": 1,
+      "definition": "thin sheets used for writing and drawing",
+      "sentence": "We folded paper boats after lunch.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "inside",
+      "tier": 1,
+      "definition": "within a building or container",
+      "sentence": "We played board games inside on the rainy day.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "whale",
+      "tier": 1,
+      "definition": "a huge animal that lives in the ocean",
+      "sentence": "A gray whale splashed near our boat.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "lizard",
+      "tier": 1,
+      "definition": "a small reptile with a long tail",
+      "sentence": "A tiny lizard sunbathed on the warm rock.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "nurse",
+      "tier": 1,
+      "definition": "a person who cares for sick people",
+      "sentence": "The school nurse gave me a bandage.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "wind",
+      "tier": 1,
+      "definition": "air that moves across the land",
+      "sentence": "The wind blew leaves across the yard.",
+      "category": "homophones"
+    },
+    {
+      "word": "good",
+      "tier": 1,
+      "definition": "nice, kind, or well done",
+      "sentence": "You did a good job on your spelling test!",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "bunny",
+      "tier": 1,
+      "definition": "a soft animal with long ears",
+      "sentence": "A fluffy bunny nibbled clover by the fence.",
+      "category": "double-consonants"
+    },
+    {
+      "word": "silly",
+      "tier": 1,
+      "definition": "funny in a goofy way",
+      "sentence": "We made such goofy faces at the silly photo booth.",
+      "category": "double-consonants"
+    },
+    {
+      "word": "starts",
+      "tier": 1,
+      "definition": "begins to happen or move",
+      "sentence": "School starts at eight o'clock each day.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "hello",
+      "tier": 1,
+      "definition": "a friendly greeting word",
+      "sentence": "She waved hello to the crossing guard.",
+      "category": "double-consonants"
+    },
+    {
+      "word": "shell",
+      "tier": 1,
+      "definition": "a hard outer covering of some animals",
+      "sentence": "I found a spiral shell at the beach.",
+      "category": "double-consonants"
+    },
+    {
+      "word": "easy",
+      "tier": 1,
+      "definition": "simple, not hard to do",
+      "sentence": "The first puzzle was easy for our team.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "shift",
+      "tier": 1,
+      "definition": "to move or change position slightly",
+      "sentence": "Please shift your chair closer to the desk.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "seal",
+      "tier": 1,
+      "definition": "a sea animal with flippers",
+      "sentence": "A playful seal balanced a ball at the aquarium.",
+      "category": "homophones"
+    },
+    {
+      "word": "crack",
+      "tier": 1,
+      "definition": "a thin break or split in something",
+      "sentence": "A little crack ran down the old sidewalk.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "apple",
+      "tier": 1,
+      "definition": "a round fruit that grows on trees",
+      "sentence": "I packed a crunchy apple in my lunchbox.",
+      "category": "double-consonants"
+    },
+    {
+      "word": "shine",
+      "tier": 1,
+      "definition": "to give off bright light",
+      "sentence": "The stars shine over the campsite at night.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "spray",
+      "tier": 1,
+      "definition": "a mist of liquid sent through the air",
+      "sentence": "The waves spray water onto the rocks.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "rabbit",
+      "tier": 1,
+      "definition": "a furry animal that jumps with strong back legs",
+      "sentence": "The rabbit darted into its cozy burrow.",
+      "category": "double-consonants"
+    },
+    {
+      "word": "frozen",
+      "tier": 1,
+      "definition": "turned to ice from the cold",
+      "sentence": "We skated on the frozen pond in January.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "market",
+      "tier": 1,
+      "definition": "a place where people buy and sell things",
+      "sentence": "Mom bought fresh corn at the farmers market.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "beware",
+      "tier": 1,
+      "definition": "watch out for something risky",
+      "sentence": "The sign said to beware of slippery rocks.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "wrong",
+      "tier": 1,
+      "definition": "not correct",
+      "sentence": "I erased the wrong answer and tried again.",
+      "category": "silent-letters"
+    },
+    {
+      "word": "leg",
+      "tier": 1,
+      "definition": "a body part used for standing and walking",
+      "sentence": "The table has one wobbly leg.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "most",
+      "tier": 1,
+      "definition": "the greatest amount or number",
+      "sentence": "Ella collected the most stickers in class.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "down",
+      "tier": 1,
+      "definition": "toward a lower place",
+      "sentence": "We rolled down the grassy hill, laughing.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "sick",
+      "tier": 1,
+      "definition": "not feeling well",
+      "sentence": "I stayed home from school when I was sick.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "truck",
+      "tier": 1,
+      "definition": "a large vehicle that carries heavy loads",
+      "sentence": "A red truck delivered hay to the farm.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "bush",
+      "tier": 1,
+      "definition": "a short plant with many branches",
+      "sentence": "Berries grew on the bush by the gate.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "yarn",
+      "tier": 1,
+      "definition": "soft thread used for making warm clothes",
+      "sentence": "Grandma rolled the blue yarn into a ball.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "body",
+      "tier": 1,
+      "definition": "all the parts of a person or animal",
+      "sentence": "Exercise keeps your body strong and healthy.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "heart",
+      "tier": 1,
+      "definition": "the organ that pumps blood around your body",
+      "sentence": "My heart beat fast during the relay race.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "even",
+      "tier": 1,
+      "definition": "flat, smooth, or equal",
+      "sentence": "The baker cut the pie into even slices.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "come",
+      "tier": 1,
+      "definition": "to move toward a place",
+      "sentence": "Please come to the front of the classroom.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "sound",
+      "tier": 1,
+      "definition": "something you can hear",
+      "sentence": "The sound of rain helped me sleep.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "chips",
+      "tier": 1,
+      "definition": "thin crispy pieces of food",
+      "sentence": "We shared banana chips at snack time.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "year",
+      "tier": 1,
+      "definition": "twelve months of time",
+      "sentence": "Next year I will be in fourth grade.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "feed",
+      "tier": 1,
+      "definition": "to give food to someone or something",
+      "sentence": "We feed the class goldfish every morning.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "speak",
+      "tier": 1,
+      "definition": "to say words out loud",
+      "sentence": "Raise your hand before you speak in class.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "flock",
+      "tier": 1,
+      "definition": "a group of birds or sheep",
+      "sentence": "A flock of geese flew over the school.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "sparkle",
+      "tier": 1,
+      "definition": "to shine with tiny flashes of light",
+      "sentence": "The frost made the windows sparkle at dawn.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "hopped",
+      "tier": 1,
+      "definition": "jumped with small quick bounces",
+      "sentence": "The frog hopped from stone to stone.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "dirt",
+      "tier": 1,
+      "definition": "loose earth or soil",
+      "sentence": "We dug in the dirt to plant seeds.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "hurt",
+      "tier": 1,
+      "definition": "to feel pain or cause pain",
+      "sentence": "I hurt my knee, but the nurse helped.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "steps",
+      "tier": 1,
+      "definition": "flat places to put your feet when climbing",
+      "sentence": "We counted twenty steps up to the slide.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "path",
+      "tier": 1,
+      "definition": "a small trail to walk along",
+      "sentence": "A pebble path led to the garden gate.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "fire",
+      "tier": 1,
+      "definition": "hot flames that burn and glow",
+      "sentence": "The fire crackled while we sang camp songs.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "late",
+      "tier": 1,
+      "definition": "after the expected time",
+      "sentence": "We hurried so we wouldn't be late for class.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "wings",
+      "tier": 1,
+      "definition": "the parts a bird uses to fly",
+      "sentence": "The butterfly dried its wings in the sun.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "house",
+      "tier": 1,
+      "definition": "a building where people live",
+      "sentence": "Our house smells like cookies on Sundays.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "tusk",
+      "tier": 1,
+      "definition": "a long pointed tooth on some animals",
+      "sentence": "The walrus rested its long tusk on the ice.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "dive",
+      "tier": 1,
+      "definition": "to jump headfirst into water",
+      "sentence": "Ducks dive under the pond to find snacks.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "fine",
+      "tier": 1,
+      "definition": "very good or okay",
+      "sentence": "The weather was fine for our picnic.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "mossy",
+      "tier": 1,
+      "definition": "covered with soft green plant fuzz",
+      "sentence": "We rested on a mossy log in the forest.",
+      "category": "double-consonants"
+    },
+    {
+      "word": "beans",
+      "tier": 1,
+      "definition": "seeds from pods that people eat",
+      "sentence": "We planted beans in paper cups for science.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "truth",
+      "tier": 1,
+      "definition": "what is real and correct",
+      "sentence": "She told the truth about the broken vase.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "tallest",
+      "tier": 1,
+      "definition": "higher than every other one",
+      "sentence": "The tallest sunflower reached past the fence.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "cliffs",
+      "tier": 1,
+      "definition": "steep rocky walls of land",
+      "sentence": "Seabirds nest on the cliffs by the shore.",
+      "category": "double-consonants"
+    },
+    {
+      "word": "crunch",
+      "tier": 1,
+      "definition": "a loud crackly bite or snap",
+      "sentence": "Dry leaves crunch under our boots in fall.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "sweater",
+      "tier": 1,
+      "definition": "a warm top made of soft yarn",
+      "sentence": "I wore my striped sweater on the chilly morning.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "money",
+      "tier": 1,
+      "definition": "coins and bills used to buy things",
+      "sentence": "We saved money in a jar for the book fair.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "cabin",
+      "tier": 1,
+      "definition": "a small wooden home in the woods",
+      "sentence": "We stayed in a cozy cabin by the lake.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "carve",
+      "tier": 1,
+      "definition": "to cut shapes into wood or stone",
+      "sentence": "Grandpa likes to carve little wooden ducks.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "earth",
+      "tier": 1,
+      "definition": "the ground, or the planet we live on",
+      "sentence": "Worms wiggle through the soft earth in spring.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "half",
+      "tier": 1,
+      "definition": "one of two equal parts",
+      "sentence": "I gave half of my sandwich to my friend.",
+      "category": "silent-letters"
+    },
+    {
+      "word": "fear",
+      "tier": 1,
+      "definition": "a scared feeling",
+      "sentence": "She faced her fear and climbed the rope.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "riddle",
+      "tier": 1,
+      "definition": "a puzzle question with a tricky answer",
+      "sentence": "Ben told a funny riddle at lunch.",
+      "category": "double-consonants"
+    },
+    {
+      "word": "illness",
+      "tier": 1,
+      "definition": "a disease that makes you feel unwell",
+      "sentence": "Rest and soup helped her illness go away.",
+      "category": "double-consonants"
+    },
+    {
+      "word": "knit",
+      "tier": 1,
+      "definition": "to loop yarn into clothing",
+      "sentence": "We learned to knit scarves in craft club.",
+      "category": "silent-letters"
+    },
+    {
+      "word": "total",
+      "tier": 1,
+      "definition": "the whole amount added together",
+      "sentence": "Our class raised a total of fifty dollars.",
+      "category": "greek-latin-roots"
+    },
+    {
+      "word": "finish",
+      "tier": 1,
+      "definition": "to come to the end of a task",
+      "sentence": "I can finish my homework before dinner.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "spiders",
+      "tier": 1,
+      "definition": "small creatures with eight legs that spin webs",
+      "sentence": "We watched spiders build webs in the garden.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "hospitals",
+      "tier": 1,
+      "definition": "places where doctors and nurses help sick people",
+      "sentence": "Many hospitals have bright, cheerful children's rooms.",
+      "category": "greek-latin-roots"
+    },
+    {
+      "word": "narrow",
+      "tier": 1,
+      "definition": "thin, not wide",
+      "sentence": "We crossed the narrow bridge one at a time.",
+      "category": "double-consonants"
+    },
+    {
+      "word": "foolish",
+      "tier": 1,
+      "definition": "silly or not wise",
+      "sentence": "The foolish crow dropped its shiny treasure.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "charming",
+      "tier": 1,
+      "definition": "very pleasant and delightful",
+      "sentence": "We visited a charming village by the sea.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "beasts",
+      "tier": 1,
+      "definition": "large or wild animals",
+      "sentence": "The storybook was full of friendly beasts.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "smoothly",
+      "tier": 1,
+      "definition": "in an even way without bumps",
+      "sentence": "The sled glided smoothly down the hill.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "dangle",
+      "tier": 1,
+      "definition": "to hang and swing loosely",
+      "sentence": "Monkeys dangle from branches by their tails.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "frazzled",
+      "tier": 1,
+      "definition": "very tired and stressed",
+      "sentence": "The puppy left Mom frazzled but smiling.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "darkness",
+      "tier": 1,
+      "definition": "the state of having no light",
+      "sentence": "Fireflies glowed in the darkness of the yard.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "shadows",
+      "tier": 1,
+      "definition": "dim shapes made when something blocks light",
+      "sentence": "We made animal shadows on the wall with flashlights.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "friend",
+      "tier": 1,
+      "definition": "someone you like and trust",
+      "sentence": "My best friend shares her crayons with me.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "thirsty",
+      "tier": 1,
+      "definition": "needing something to drink",
+      "sentence": "The thirsty runners lined up at the water fountain.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "voice",
+      "tier": 1,
+      "definition": "the sound you make when speaking",
+      "sentence": "Use a quiet voice in the library.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "lead",
+      "tier": 1,
+      "definition": "to show others the way",
+      "sentence": "Maya will lead the line to the lunchroom.",
+      "category": "homophones"
+    },
+    {
+      "word": "cloak",
+      "tier": 1,
+      "definition": "a loose coat that wraps around you",
+      "sentence": "The hero wore a long gray cloak in the play.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "indoors",
+      "tier": 1,
+      "definition": "within a building, out of the weather",
+      "sentence": "We played charades indoors during the storm.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "holiday",
+      "tier": 1,
+      "definition": "a special day of celebration",
+      "sentence": "We baked cookies for the winter holiday.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "entire",
+      "tier": 1,
+      "definition": "whole, with nothing left out",
+      "sentence": "The entire class cheered at the assembly.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "mustard",
+      "tier": 1,
+      "definition": "a tangy yellow sauce for food",
+      "sentence": "Dad put mustard on his pretzel at the fair.",
+      "category": "loanwords"
+    },
+    {
+      "word": "medium",
+      "tier": 1,
+      "definition": "a middle size or amount",
+      "sentence": "I ordered a medium lemonade at the stand.",
+      "category": "greek-latin-roots"
+    },
+    {
+      "word": "afraid",
+      "tier": 1,
+      "definition": "feeling fear or worry",
+      "sentence": "The kitten was afraid of the vacuum cleaner.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "source",
+      "tier": 1,
+      "definition": "the place something comes from",
+      "sentence": "A mountain spring is the source of the river.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "shivering",
+      "tier": 1,
+      "definition": "shaking from cold or fright",
+      "sentence": "We came in shivering after the snowball fight.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "cottage",
+      "tier": 1,
+      "definition": "a small cozy house in the country",
+      "sentence": "Roses grew beside the little cottage.",
+      "category": "double-consonants"
+    },
+    {
+      "word": "distance",
+      "tier": 1,
+      "definition": "the space between two places",
+      "sentence": "We measured the distance across the gym.",
+      "category": "greek-latin-roots"
+    },
+    {
+      "word": "bamboo",
+      "tier": 1,
+      "definition": "a tall woody grass with hollow stems",
+      "sentence": "Pandas munch bamboo all day long.",
+      "category": "loanwords"
+    },
+    {
+      "word": "always",
+      "tier": 1,
+      "definition": "at every time, without fail",
+      "sentence": "I always brush my teeth before bed.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "morning",
+      "tier": 1,
+      "definition": "the early part of the day",
+      "sentence": "Birds sing outside my window every morning.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "lovely",
+      "tier": 1,
+      "definition": "very pretty or delightful",
+      "sentence": "What a lovely day for a nature walk!",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "grandfather",
+      "tier": 1,
+      "definition": "the dad of your mom or dad",
+      "sentence": "My grandfather tells the best campfire stories.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "peer",
+      "tier": 1,
+      "definition": "to look very closely at something",
+      "sentence": "Owls peer into the night with huge eyes.",
+      "category": "homophones"
+    },
+    {
+      "word": "peach",
+      "tier": 1,
+      "definition": "a sweet fuzzy fruit with a pit",
+      "sentence": "The ripe peach dripped juice down my chin.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "groan",
+      "tier": 1,
+      "definition": "a deep sound made when tired or annoyed",
+      "sentence": "We heard the old stairs groan as we climbed.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "parade",
+      "tier": 1,
+      "definition": "a festive march down a street",
+      "sentence": "We watched the parade from Grandpa's shoulders.",
+      "category": "loanwords"
+    },
+    {
+      "word": "trouble",
+      "tier": 1,
+      "definition": "a problem or difficulty",
+      "sentence": "The lost mitten caused no trouble at all.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "safety",
+      "tier": 1,
+      "definition": "freedom from danger or harm",
+      "sentence": "Helmets are important for bike safety.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "company",
+      "tier": 1,
+      "definition": "a business, or guests visiting you",
+      "sentence": "We tidied the den before company arrived.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "pennies",
+      "tier": 1,
+      "definition": "small brown coins worth one cent each",
+      "sentence": "We dropped pennies into the wishing fountain.",
+      "category": "double-consonants"
+    },
+    {
+      "word": "remember",
+      "tier": 1,
+      "definition": "to keep something in your mind",
+      "sentence": "I remember my first day of school.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "pearls",
+      "tier": 1,
+      "definition": "shiny white gems made inside oysters",
+      "sentence": "Divers found pearls in the quiet lagoon.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "barge",
+      "tier": 1,
+      "definition": "a long flat boat that carries goods",
+      "sentence": "A barge carried grain slowly down the river.",
+      "category": "loanwords"
+    },
+    {
+      "word": "humble",
+      "tier": 1,
+      "definition": "modest, not bragging",
+      "sentence": "The champion stayed humble after winning.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "breeze",
+      "tier": 1,
+      "definition": "a soft gentle wind",
+      "sentence": "A cool breeze fluttered the classroom curtains.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "sprout",
+      "tier": 1,
+      "definition": "to begin to grow",
+      "sentence": "Tiny leaves sprout from the seeds we planted.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "alive",
+      "tier": 1,
+      "definition": "living, not dead",
+      "sentence": "The garden feels alive with buzzing bees.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "return",
+      "tier": 1,
+      "definition": "to come back or give back",
+      "sentence": "Please return your books by Friday.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "footprints",
+      "tier": 1,
+      "definition": "marks left on the ground by shoes or paws",
+      "sentence": "We followed deer footprints through the snow.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "gentle",
+      "tier": 1,
+      "definition": "soft, kind, and careful",
+      "sentence": "Be gentle when you hold the baby chicks.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "pancakes",
+      "tier": 1,
+      "definition": "flat round breakfast treats made from batter",
+      "sentence": "We flipped pancakes for Saturday breakfast.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "sloth",
+      "tier": 1,
+      "definition": "a slow animal that hangs in trees",
+      "sentence": "The sloth smiled as it hung from a branch.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "whistle",
+      "tier": 1,
+      "definition": "a high clear tone made by blowing air",
+      "sentence": "The coach blew her whistle to start the game.",
+      "category": "silent-letters"
+    },
+    {
+      "word": "relax",
+      "tier": 1,
+      "definition": "to rest and feel calm",
+      "sentence": "We relax with books after recess.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "stout",
+      "tier": 1,
+      "definition": "strong and thick",
+      "sentence": "A stout little pony pulled the hay cart.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "guide",
+      "tier": 1,
+      "definition": "to show someone the way",
+      "sentence": "A ranger will guide us along the trail.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "ginger",
+      "tier": 1,
+      "definition": "a spicy root used in cooking and treats",
+      "sentence": "We baked ginger cookies for the bake sale.",
+      "category": "loanwords"
+    },
+    {
+      "word": "hiking",
+      "tier": 1,
+      "definition": "walking long trails for fun",
+      "sentence": "Our family loves hiking in the autumn woods.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "result",
+      "tier": 1,
+      "definition": "what happens because of something",
+      "sentence": "The result of our experiment surprised everyone.",
+      "category": "greek-latin-roots"
+    },
+    {
+      "word": "tangy",
+      "tier": 1,
+      "definition": "having a sharp, zesty taste",
+      "sentence": "The lemonade had a tangy, refreshing flavor.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "grumpily",
+      "tier": 1,
+      "definition": "in a cranky, unhappy way",
+      "sentence": "The rooster crowed grumpily at the rain cloud.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "seventy",
+      "tier": 1,
+      "definition": "the number that comes after sixty-nine",
+      "sentence": "Grandma turned seventy and we threw a party.",
+      "category": "everyday-hard"
+    },
+    {
+      "word": "soared",
+      "tier": 1,
+      "definition": "flew high through the air",
+      "sentence": "The eagle soared above the misty valley.",
+      "category": "everyday-hard"
+    }
+  ]
+}

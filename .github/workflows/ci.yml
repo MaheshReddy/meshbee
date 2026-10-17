@@ -1,0 +1,69 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Unit tests
+        run: python -m unittest -v
+      - name: Letter-filter tests (node)
+        run: node test_letterfilter.js
+      - name: JS syntax check
+        run: node --check meshbee/static/app.js && node --check meshbee/static/letters.js
+      - name: End-to-end API check
+        run: python e2e_check.py
+
+  release:
+    # Deploy-main-on-green: every green push to main refreshes the rolling
+    # "latest" prerelease; the host updater polls it (change signal = the
+    # commit sha in the release body, since the wheel version string is
+    # constant between releases).
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: release-latest
+      cancel-in-progress: false
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - name: Bake build info
+        run: |
+          printf 'BUILD_SHA = "%s"\nBUILD_DATE = "%s"\n' \
+            "${GITHUB_SHA}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > meshbee/_build_info.py
+      - name: Build wheel
+        run: |
+          python -m pip install --quiet build
+          python -m build --wheel
+          ls -l dist/
+      - name: Update rolling 'latest' release
+        run: |
+          NOTES="commit: ${GITHUB_SHA}"$'\n'"Automated rolling build of main. Installed by the host updater."
+          gh release delete latest --cleanup-tag --yes || true
+          gh release create latest \
+            --prerelease \
+            --target "${GITHUB_SHA}" \
+            --title "latest (rolling)" \
+            --notes "${NOTES}" \
+            dist/*.whl

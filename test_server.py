@@ -297,6 +297,98 @@ class TestMastery(unittest.TestCase):
         self.assertFalse(is_word_mastered(rec))
 
 
+class TestSchemaAndVersion(unittest.TestCase):
+    def setUp(self):
+        self.dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.dir, ignore_errors=True)
+        self.app = ServerApp(data_dir=os.path.join(self.dir, "data"), corpus_path="sample")
+
+    def _read(self, name):
+        with open(os.path.join(self.app.store.data_dir, name)) as f:
+            return json.load(f)
+
+    def test_schema_version_written_to_profiles_and_lists(self):
+        self.app.create_profile({"name": "Zoe"})
+        self.app.create_list({"name": "L", "text": "cat\ndog\nfox"})
+        self.assertEqual(self._read("profiles.json")["schemaVersion"], 1)
+        self.assertEqual(self._read("lists.json")["schemaVersion"], 1)
+
+    def test_schema_version_written_to_progress(self):
+        p = self.app.create_profile({"name": "Zoe"})
+        self.app._record_word_result(p["id"], {"word": "cat"}, True)
+        self.assertEqual(self._read(f"progress-{p['id']}.json")["schemaVersion"], 1)
+
+    def test_missing_schema_version_defaults_to_one(self):
+        path = os.path.join(self.app.store.data_dir, "profiles.json")
+        server.atomic_write_json(path, {"profiles": [
+            {"id": "abc", "name": "Old", "avatar": {"color": "#fff", "icon": "bee"},
+             "createdAt": 0}]})
+        self.assertEqual(self.app.list_profiles()[0]["name"], "Old")
+
+    def test_future_schema_version_rejected_clearly(self):
+        path = os.path.join(self.app.store.data_dir, "profiles.json")
+        server.atomic_write_json(path, {"schemaVersion": 99, "profiles": []})
+        with self.assertRaises(ApiError) as ctx:
+            self.app.list_profiles()
+        self.assertEqual(ctx.exception.status, 500)
+        self.assertIn("schemaVersion 99", ctx.exception.message)
+
+    def test_version_info_fields(self):
+        info = self.app.version_info()
+        self.assertTrue(info["version"])
+        self.assertEqual(info["build"], "dev")        # no _build_info.py in a checkout
+        self.assertEqual(info["corpusWords"], 15)     # sample corpus
+        self.assertEqual(info["schemaVersion"], 1)
+
+
+class TestCorpusResolution(unittest.TestCase):
+    def setUp(self):
+        self.dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.dir, ignore_errors=True)
+        self.old_cwd = os.getcwd()
+        self.addCleanup(os.chdir, self.old_cwd)
+
+    def test_default_falls_back_to_packaged_corpus(self):
+        os.chdir(self.dir)  # no ./corpus.json here
+        app = ServerApp(data_dir=os.path.join(self.dir, "data"))
+        import meshbee
+        packaged = os.path.join(os.path.dirname(meshbee.__file__), "corpus.json")
+        with open(packaged) as f:
+            expected = len(json.load(f)["words"])
+        self.assertEqual(len(app.corpus_words), expected)
+        self.assertGreater(expected, 0)
+
+    def test_cwd_corpus_overrides_packaged(self):
+        with open(os.path.join(self.dir, "corpus.json"), "w") as f:
+            json.dump({"words": [
+                {"word": "alpha", "tier": 1}, {"word": "beta", "tier": 2},
+                {"word": "gamma", "tier": 3}]}, f)
+        os.chdir(self.dir)
+        app = ServerApp(data_dir=os.path.join(self.dir, "data"))
+        self.assertEqual(len(app.corpus_words), 3)
+
+    def test_explicit_path_beats_cwd(self):
+        with open(os.path.join(self.dir, "corpus.json"), "w") as f:
+            json.dump({"words": [{"word": "cwdword", "tier": 1}]}, f)
+        explicit = os.path.join(self.dir, "other.json")
+        with open(explicit, "w") as f:
+            json.dump({"words": [{"word": "explicit", "tier": 1},
+                                 {"word": "second", "tier": 2}]}, f)
+        os.chdir(self.dir)
+        app = ServerApp(data_dir=os.path.join(self.dir, "data"), corpus_path=explicit)
+        self.assertEqual(len(app.corpus_words), 2)
+
+    def test_explicit_missing_path_serves_empty(self):
+        app = ServerApp(data_dir=os.path.join(self.dir, "data"),
+                        corpus_path=os.path.join(self.dir, "nope.json"))
+        self.assertEqual(app.corpus_words, [])
+        self.assertFalse(app.corpus_meta()["loaded"])
+
+    def test_sample_keyword(self):
+        app = ServerApp(data_dir=os.path.join(self.dir, "data"), corpus_path="sample")
+        self.assertEqual(len(app.corpus_words), 15)
+
+
 class AppTestBase(unittest.TestCase):
     """End-to-end tests at the application layer (no HTTP socket needed)."""
 
