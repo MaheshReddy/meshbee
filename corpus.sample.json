@@ -1,0 +1,19 @@
+{
+  "words": [
+    {"word": "friend", "tier": 1, "definition": "a person you like and enjoy spending time with", "sentence": "My best friend sits next to me in class.", "category": "everyday-hard"},
+    {"word": "because", "tier": 1, "definition": "for the reason that", "sentence": "We stayed inside because it was raining.", "category": "everyday-hard"},
+    {"word": "little", "tier": 1, "definition": "small in size", "sentence": "A little ladybug landed on the leaf.", "category": "double-consonants"},
+    {"word": "knee", "tier": 1, "definition": "the joint in the middle of your leg", "sentence": "She scraped her knee on the playground.", "category": "silent-letters"},
+    {"word": "there", "tier": 1, "definition": "in or at that place", "sentence": "Put the honey jar over there.", "category": "homophones"},
+    {"word": "necessary", "tier": 2, "definition": "needed; something you must have or do", "sentence": "It is necessary to wear a helmet when biking.", "category": "double-consonants"},
+    {"word": "island", "tier": 2, "definition": "land completely surrounded by water", "sentence": "The pirates buried treasure on the island.", "category": "silent-letters"},
+    {"word": "their", "tier": 2, "definition": "belonging to them", "sentence": "The bees returned to their hive.", "category": "homophones"},
+    {"word": "telephone", "tier": 2, "definition": "a device used to talk to someone far away", "sentence": "Grandma answered the telephone on the first ring.", "category": "greek-latin-roots"},
+    {"word": "balloon", "tier": 2, "definition": "a rubber bag filled with air that floats", "sentence": "The red balloon drifted over the garden.", "category": "double-consonants"},
+    {"word": "rhythm", "tier": 3, "definition": "a repeated pattern of sound or beats", "sentence": "The drummer kept a steady rhythm.", "category": "silent-letters"},
+    {"word": "bouquet", "tier": 3, "definition": "a bunch of flowers tied together", "sentence": "He picked a bouquet of daisies for his mom.", "category": "loanwords"},
+    {"word": "chrysanthemum", "tier": 3, "definition": "a bright autumn flower with many thin petals", "sentence": "A yellow chrysanthemum bloomed by the fence.", "category": "greek-latin-roots"},
+    {"word": "occurrence", "tier": 3, "definition": "something that happens; an event", "sentence": "A double rainbow is a rare occurrence.", "category": "double-consonants"},
+    {"word": "mischievous", "tier": 3, "definition": "playfully naughty or causing trouble", "sentence": "The mischievous puppy hid my shoe.", "category": "everyday-hard"}
+  ]
+}
