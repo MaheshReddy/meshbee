@@ -334,7 +334,13 @@ textarea { resize: vertical; font-size: 17px; font-family: ui-monospace, Menlo, 
   display: inline-flex; align-items: center; justify-content: center;
   width: 62px; border: 3px solid #d4c49a; border-radius: 18px;
   background: rgba(255, 255, 255, 0.9); color: var(--honey-deep); cursor: pointer;
+  position: relative;
   transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.12s var(--ease-bounce);
+}
+.btn-mic::after {              /* shortcut hint under the button */
+  content: "Alt+M";
+  position: absolute; bottom: -19px; left: 50%; transform: translateX(-50%);
+  font-size: 12px; font-weight: bold; color: var(--ink-soft); white-space: nowrap;
 }
 .btn-mic .icon { width: 28px; height: 28px; }
 .btn-mic:hover { border-color: var(--honey-dark); transform: translateY(-1px); }
@@ -386,6 +392,8 @@ textarea { resize: vertical; font-size: 17px; font-family: ui-monospace, Menlo, 
 }
 
 .diff-rows { display: flex; flex-direction: column; gap: 12px; margin: 16px 0 8px; align-items: center; }
+.also-spelled { font-size: 15px; color: var(--ink-soft); font-style: italic; margin: 2px 0 0; }
+.missed-item .also-spelled { margin: 0; }
 .diff-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; }
 .diff-label { font-size: 14px; font-weight: bold; color: var(--ink-soft); min-width: 95px; text-align: right; }
 .diff-letters { display: flex; gap: 4px; flex-wrap: wrap; }

@@ -51,7 +51,7 @@ def main():
         check("GET / serves index.html", "MeshBee" in html)
 
         st, meta = req("GET", "/api/corpus/meta")
-        check("corpus meta loaded (15 words)", st == 200 and meta["wordCount"] == 15)
+        check("corpus meta loaded (17 words)", st == 200 and meta["wordCount"] == 17)
 
         # profile
         st, prof = req("POST", "/api/profiles",
@@ -108,6 +108,22 @@ def main():
             st, last = req("POST", f"/api/session/{lsess['sessionId']}/answer",
                            {"attempt": "wrongo" if w == lwords[0] else w})
         check("custom list session completes", last["done"])
+
+        # alt spellings: list with word/alt syntax, answer using the ALT
+        st, alist = req("POST", "/api/lists",
+                        {"name": "Alts", "text": "colour/color\ngrey/gray\ndonut/doughnut"})
+        check("list with word/alt syntax created", st == 200
+              and alist["list"]["entries"][0]["alt"] == ["color"])
+        st, asess = req("POST", "/api/session",
+                        {"profileId": pid, "source": {"type": "list", "listId": alist["list"]["id"]}})
+        alt_of = {"colour": "color", "grey": "gray", "donut": "doughnut"}
+        ok_alt = True
+        for e in asess["entries"]:
+            w = base64.b64decode(e["w"]).decode()
+            st, r = req("POST", f"/api/session/{asess['sessionId']}/answer",
+                        {"attempt": alt_of[w]})
+            ok_alt = ok_alt and r["correct"]
+        check("alt spellings graded correct", ok_alt)
 
         # tricky session appears after misses (we now have >= 2 missed... need 3)
         st, prog = req("GET", f"/api/profiles/{pid}/progress")

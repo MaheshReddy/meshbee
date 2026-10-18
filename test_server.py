@@ -20,10 +20,65 @@ from meshbee.server import (
     letter_diff,
     mask_word_in_text,
     new_word_record,
+    accepted_spellings,
+    closest_spelling,
+    edit_distance,
+    grade_any,
+    mask_spellings_in_text,
     normalize_answer,
     parse_list_text,
     select_session_entries,
 )
+
+
+class TestAltSpellings(unittest.TestCase):
+    SPELLINGS = ["brazier", "brasier"]
+
+    def test_grade_any_accepts_primary_and_alt(self):
+        self.assertTrue(grade_any("brazier", self.SPELLINGS))
+        self.assertTrue(grade_any("  BRASIER ", self.SPELLINGS))
+        self.assertFalse(grade_any("brazzier", self.SPELLINGS))
+
+    def test_accepted_spellings_primary_first(self):
+        entry = {"word": "glycerin", "alt": ["glycerine"]}
+        self.assertEqual(accepted_spellings(entry), ["glycerin", "glycerine"])
+        self.assertEqual(accepted_spellings({"word": "cat"}), ["cat"])
+
+    def test_edit_distance(self):
+        self.assertEqual(edit_distance("cat", "cat"), 0)
+        self.assertEqual(edit_distance("cot", "cat"), 1)      # substitution
+        self.assertEqual(edit_distance("cats", "cat"), 1)     # extra letter
+        self.assertEqual(edit_distance("CAT ", "cat"), 0)     # normalized first
+
+    def test_closest_spelling_picks_fewest_edits(self):
+        # "brasler" is 1 edit from brasier, 2 from brazier
+        self.assertEqual(closest_spelling("brasler", self.SPELLINGS), "brasier")
+        # "brazzier" is closer to the primary
+        self.assertEqual(closest_spelling("brazzier", self.SPELLINGS), "brazier")
+
+    def test_closest_spelling_tie_prefers_primary(self):
+        # equidistant attempt: stable min keeps the first (primary) spelling
+        self.assertEqual(closest_spelling("graw", ["gray", "grau"]), "gray")
+
+    def test_mask_spellings_masks_all(self):
+        out = mask_spellings_in_text("Glycerine or glycerin works.", ["glycerin", "glycerine"])
+        self.assertNotIn("glycerin", out.lower())
+
+
+class TestMultiWordEntries(unittest.TestCase):
+    def test_internal_spaces_collapse_and_case(self):
+        self.assertTrue(grade_attempt("  Sierra   LEONE ", "sierra leone"))
+        self.assertTrue(grade_attempt("salicylic acid", "Salicylic  Acid"))
+        self.assertFalse(grade_attempt("sierraleone", "sierra leone"))
+
+    def test_hyphenated_multi_part(self):
+        self.assertTrue(grade_attempt("cul-de-sac", "cul-de-sac"))
+        self.assertFalse(grade_attempt("cul de sac", "cul-de-sac"))
+
+    def test_diff_handles_spaces(self):
+        segs = letter_diff("siera leone", "sierra leone")
+        rebuilt = "".join(s["correct"] for s in segs)
+        self.assertEqual(rebuilt, "sierra leone")
 
 
 class TestWordMask(unittest.TestCase):
@@ -190,6 +245,42 @@ class TestListParser(unittest.TestCase):
         self.assertEqual([e["line"] for e in errors], [2, 4])
 
 
+    def test_alt_spelling_syntax(self):
+        entries, errors, _ = parse_list_text("colour/color | a shade\ngrey/gray/graye")
+        self.assertEqual(errors, [])
+        self.assertEqual(entries[0]["word"], "colour")
+        self.assertEqual(entries[0]["alt"], ["color"])
+        self.assertEqual(entries[0]["definition"], "a shade")
+        self.assertEqual(entries[1]["word"], "grey")
+        self.assertEqual(entries[1]["alt"], ["gray", "graye"])
+
+    def test_alt_omitted_when_absent(self):
+        entries, errors, _ = parse_list_text("plainword")
+        self.assertEqual(errors, [])
+        self.assertNotIn("alt", entries[0])
+
+    def test_alt_duplicates_of_primary_dropped(self):
+        entries, errors, _ = parse_list_text("grey/GREY/gray")
+        self.assertEqual(errors, [])
+        self.assertEqual(entries[0]["alt"], ["gray"])
+
+    def test_empty_alt_part_is_error(self):
+        _, errors, _ = parse_list_text("colour//color\n/word\nword/")
+        self.assertEqual([e["line"] for e in errors], [1, 2, 3])
+        self.assertIn("Empty spelling", errors[0]["message"])
+
+    def test_bad_alt_charset_is_error(self):
+        _, errors, _ = parse_list_text("colour/c0lor")
+        self.assertEqual(len(errors), 1)
+        self.assertIn("c0lor", errors[0]["message"])
+
+    def test_multi_word_entries_valid(self):
+        entries, errors, _ = parse_list_text("ice cream/icecream | a frozen treat")
+        self.assertEqual(errors, [])
+        self.assertEqual(entries[0]["word"], "ice cream")
+        self.assertEqual(entries[0]["alt"], ["icecream"])
+
+
 class TestAtomicWrite(unittest.TestCase):
     def setUp(self):
         self.dir = tempfile.mkdtemp()
@@ -337,7 +428,7 @@ class TestSchemaAndVersion(unittest.TestCase):
         info = self.app.version_info()
         self.assertTrue(info["version"])
         self.assertEqual(info["build"], "dev")        # no _build_info.py in a checkout
-        self.assertEqual(info["corpusWords"], 15)     # sample corpus
+        self.assertEqual(info["corpusWords"], 17)     # sample corpus
         self.assertEqual(info["schemaVersion"], 1)
 
 
@@ -386,7 +477,97 @@ class TestCorpusResolution(unittest.TestCase):
 
     def test_sample_keyword(self):
         app = ServerApp(data_dir=os.path.join(self.dir, "data"), corpus_path="sample")
-        self.assertEqual(len(app.corpus_words), 15)
+        self.assertEqual(len(app.corpus_words), 17)
+
+
+class TestAltSpellingSessions(unittest.TestCase):
+    """App-level flow with alt spellings in the corpus."""
+
+    def setUp(self):
+        self.dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.dir, ignore_errors=True)
+        corpus = {"words": [
+            {"word": "brazier", "tier": 1, "alt": ["brasier"],
+             "definition": "a pan for burning coals",
+             "sentence": "A brazier glowed by the tent."},
+            {"word": "glycerin", "tier": 1, "alt": ["glycerine"]},
+            {"word": "sierra leone", "tier": 1,
+             "sentence": "Freetown is in Sierra Leone."},
+            {"word": "plain", "tier": 1},
+        ]}
+        path = os.path.join(self.dir, "corpus.json")
+        with open(path, "w") as f:
+            json.dump(corpus, f)
+        self.app = ServerApp(data_dir=os.path.join(self.dir, "data"), corpus_path=path)
+        self.profile = self.app.create_profile({"name": "Alta"})
+        self.sess = self.app.create_session(
+            {"profileId": self.profile["id"], "source": {"type": "tier", "tier": 1}})
+
+    def _entry_words(self):
+        import base64
+        return [base64.b64decode(e["w"]).decode() for e in self.sess["entries"]]
+
+    def _answer(self, attempt):
+        return self.app.answer(self.sess["sessionId"], {"attempt": attempt})
+
+    def test_payload_contains_obfuscated_alts_no_cleartext(self):
+        payload = json.dumps(self.sess)
+        for secret in ("brazier", "brasier", "glycerin", "glycerine", "sierra"):
+            self.assertNotIn(secret, payload)
+        by_word = {w: e for w, e in zip(self._entry_words(), self.sess["entries"])}
+        import base64
+        alts = [base64.b64decode(a).decode() for a in by_word["brazier"]["a"]]
+        self.assertEqual(alts, ["brasier"])
+        self.assertEqual(by_word["plain"]["a"], [])
+
+    def test_alt_spelling_graded_correct(self):
+        answers = {"brazier": "BRASIER ", "glycerin": "glycerine",
+                   "sierra leone": "  Sierra   Leone", "plain": "plain"}
+        last = None
+        for word in self._entry_words():
+            last = self._answer(answers[word])
+            self.assertTrue(last["correct"], f"{word} via {answers[word]!r}")
+        self.assertEqual(last["summary"]["correctCount"], 4)
+
+    def test_wrong_answer_diffs_against_closest_and_reveals_primary(self):
+        words = self._entry_words()
+        for word in words:
+            if word == "brazier":
+                res = self._answer("brasler")   # 1 edit from the ALT brasier
+                self.assertFalse(res["correct"])
+                self.assertEqual(res["correctWord"], "brazier")      # primary reveal
+                self.assertEqual(res["alsoSpelled"], ["brasier"])
+                rebuilt = "".join(s["correct"] for s in res["diff"])
+                self.assertEqual(rebuilt, "brasier")                 # closest diff target
+            else:
+                self._answer(word)
+
+    def test_progress_keyed_by_primary_regardless_of_spelling_used(self):
+        for word in self._entry_words():
+            self._answer("glycerine" if word == "glycerin" else word + "x")
+        progress = self.app.store.load_progress(self.profile["id"])
+        self.assertIn("glycerin", progress["words"])        # primary key
+        self.assertNotIn("glycerine", progress["words"])
+        self.assertEqual(progress["words"]["glycerin"]["correct"], 1)
+
+    def test_tricky_session_keeps_alts(self):
+        # Miss all four, then the tricky session must still accept alt spellings.
+        for word in self._entry_words():
+            self._answer(word + "zzz")
+        tricky = self.app.create_session(
+            {"profileId": self.profile["id"], "source": {"type": "tricky"}})
+        import base64
+        for entry in tricky["entries"]:
+            word = base64.b64decode(entry["w"]).decode()
+            attempt = "brasier" if word == "brazier" else word
+            res = self.app.answer(tricky["sessionId"], {"attempt": attempt})
+            self.assertTrue(res["correct"], word)
+
+    def test_sentence_masks_multiword_and_alt(self):
+        by_word = {w: e for w, e in zip(self._entry_words(), self.sess["entries"])}
+        sentence = by_word["sierra leone"]["sentence"]
+        self.assertNotIn("sierra", sentence.lower())
+        self.assertIn("_____", sentence)
 
 
 class AppTestBase(unittest.TestCase):

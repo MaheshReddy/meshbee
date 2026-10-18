@@ -376,13 +376,22 @@ const voiceInput = {
   toggle() {
     if (this.active) {
       this.deactivate();
-    } else {
-      this.denied = false;        // explicit user press: let them retry permission
-      this.failStreak = 0;
-      this.active = true;
-      this._start();
-      this._syncUI();
+      return;
     }
+    this.denied = false;        // explicit user press: let them retry permission
+    this.failStreak = 0;
+    this.active = true;
+    const synthBusy = ("speechSynthesis" in window) &&
+      (speechSynthesis.speaking || speechSynthesis.pending);
+    if (synthBusy) {
+      // Toggled on mid-TTS (click or Alt+M): honor echo protection — start
+      // listening only once the app has finished talking.
+      this.pausedForTTS = true;
+      this._pollResume();
+    } else {
+      this._start();
+    }
+    this._syncUI();
   },
 
   _start() {
@@ -435,6 +444,10 @@ const voiceInput = {
     this.pausedForTTS = true;
     this._abortRec();
     this._syncUI();
+    this._pollResume();
+  },
+
+  _pollResume() {
     if (this._resumePoll) return;
     this._resumePoll = setInterval(() => {
       const synthQuiet = !("speechSynthesis" in window) ||
@@ -519,7 +532,7 @@ const voiceInput = {
     btn.classList.toggle("listening", this.active && this.listening);
     btn.classList.toggle("paused", this.active && !this.listening);
     btn.setAttribute("aria-pressed", String(this.active));
-    btn.title = this.active ? "Stop voice spelling" : "Spell by voice";
+    btn.title = this.active ? "Stop voice spelling (Alt+M)" : "Spell by voice (Alt+M)";
   },
 };
 
@@ -772,6 +785,7 @@ async function startSession(source) {
     streak: 0,
     entries: data.entries.map((e) => ({
       word: decodeWord(e.w),   // JS memory only — never rendered pre-answer
+      alt: (e.a || []).map(decodeWord),  // accepted alternatives (answers too)
       definition: e.definition,
       sentence: e.sentence,
     })),
@@ -939,6 +953,10 @@ function showWrongFeedback(res) {
   title.appendChild(document.createTextNode("So close! Let's look together."));
   card.appendChild(title);
   card.appendChild(renderDiff(res.diff, res.attempt, res.correctWord));
+  if (res.alsoSpelled && res.alsoSpelled.length) {
+    card.appendChild(el("p", "also-spelled",
+      `Also spelled: ${res.alsoSpelled.join(", ")} — both count!`));
+  }
   const row = el("div", "feedback-actions");
   row.appendChild(spellButton(res.correctWord));
   const gotIt = el("button", "btn btn-primary", "Got it!");
@@ -1049,6 +1067,9 @@ function showSummary(summary) {
       const item = el("div", "missed-item");
       item.appendChild(el("span", "missed-word", m.word));
       if (m.attempt) item.appendChild(el("span", "missed-attempt", m.attempt));
+      if (m.alsoSpelled && m.alsoSpelled.length) {
+        item.appendChild(el("span", "also-spelled", `also: ${m.alsoSpelled.join(", ")}`));
+      }
       const say = el("button", "btn btn-ghost btn-small");
       say.type = "button";
       say.appendChild(svgIcon("speaker"));
@@ -1211,6 +1232,14 @@ document.addEventListener("keydown", (ev) => {
   if (ev.altKey && (ev.key === "s" || ev.key === "S")) { ev.preventDefault(); replayWord(SLOW_MULT); return; }
   if (ev.altKey && (ev.key === "d" || ev.key === "D")) { ev.preventDefault(); useHint("definition"); return; }
   if (ev.altKey && (ev.key === "e" || ev.key === "E")) { ev.preventDefault(); useHint("sentence"); return; }
+  // Push-to-talk: Alt+M toggles the voice-spelling mic (same guards as the
+  // button — no-op when unsupported or disabled in settings; the toggle
+  // itself honors the TTS echo-pause).
+  if (ev.altKey && (ev.key === "m" || ev.key === "M")) {
+    ev.preventDefault();
+    if (voiceInput.supported && voiceInput.prefEnabled()) voiceInput.toggle();
+    return;
+  }
 
   // When feedback is showing, any key advances a correct answer; Enter advances
   // a wrong one. Keys aimed at the "Spell it to me" button pass through so it

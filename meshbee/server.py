@@ -83,6 +83,32 @@ def grade_attempt(attempt: str, correct: str) -> bool:
     return normalize_answer(attempt) == normalize_answer(correct)
 
 
+def accepted_spellings(entry: dict) -> list:
+    """Primary spelling first, then any accepted alternatives."""
+    return [entry["word"]] + [a for a in (entry.get("alt") or []) if a]
+
+
+def grade_any(attempt: str, spellings: list) -> bool:
+    return any(grade_attempt(attempt, s) for s in spellings)
+
+
+def edit_distance(a: str, b: str) -> int:
+    """Edit distance between normalized strings (substitution counts once)."""
+    a, b = normalize_answer(a), normalize_answer(b)
+    sm = difflib.SequenceMatcher(a=a, b=b, autojunk=False)
+    dist = 0
+    for op, i1, i2, j1, j2 in sm.get_opcodes():
+        if op != "equal":
+            dist += max(i2 - i1, j2 - j1)
+    return dist
+
+
+def closest_spelling(attempt: str, spellings: list) -> str:
+    """The accepted spelling with the fewest edits from the attempt — the most
+    helpful diff target. Stable min: ties go to the primary (listed first)."""
+    return min(spellings, key=lambda s: edit_distance(attempt, s))
+
+
 _DIFF_OP_NAMES = {
     "equal": "match",
     "replace": "wrong",
@@ -136,7 +162,9 @@ def stars_message(stars: int) -> str:
 def parse_list_text(text: str):
     """Parse custom-list textarea content. One entry per line:
         word | definition | sentence
-    (definition and sentence optional). Returns (entries, errors, warnings).
+    (definition and sentence optional). The word field may list accepted
+    alternative spellings separated by slashes: colour/color.
+    Returns (entries, errors, warnings).
     errors: [{line, text, message}] — any error blocks saving.
     warnings: [{line, text, message}] — duplicates collapsed, save allowed.
     """
@@ -153,19 +181,31 @@ def parse_list_text(text: str):
             errors.append({"line": lineno, "text": raw,
                            "message": "Too many | separators (use: word | definition | sentence)"})
             continue
-        word = parts[0].replace("\u2019", "'").replace("\u2018", "'")
-        if not word:
+        word_field = parts[0].replace("\u2019", "'").replace("\u2018", "'")
+        if not word_field:
             errors.append({"line": lineno, "text": raw, "message": "Missing word before the first |"})
             continue
-        if len(word) > MAX_WORD_LEN:
-            errors.append({"line": lineno, "text": raw,
-                           "message": f"Word is too long (max {MAX_WORD_LEN} characters)"})
+        spellings = [s.strip() for s in word_field.split("/")]
+        bad = None
+        for s in spellings:
+            if not s:
+                bad = "Empty spelling around a / (use: word/alternative)"
+            elif len(s) > MAX_WORD_LEN:
+                bad = f'"{s}" is too long (max {MAX_WORD_LEN} characters)'
+            elif not WORD_RE.match(s):
+                bad = (f'"{s}" may only use letters, hyphens, and apostrophes, '
+                       "and must start and end with a letter")
+            if bad:
+                break
+        if bad:
+            errors.append({"line": lineno, "text": raw, "message": bad})
             continue
-        if not WORD_RE.match(word):
-            errors.append({"line": lineno, "text": raw,
-                           "message": "Word may only use letters, hyphens, and apostrophes, "
-                                      "and must start and end with a letter"})
-            continue
+        word = spellings[0]
+        alts = []
+        for s in spellings[1:]:
+            key = normalize_answer(s)
+            if key != normalize_answer(word) and key not in [normalize_answer(a) for a in alts]:
+                alts.append(s)
         key = normalize_answer(word)
         if key in seen:
             warnings.append({"line": lineno, "text": raw,
@@ -174,7 +214,10 @@ def parse_list_text(text: str):
         seen[key] = lineno
         definition = parts[1] if len(parts) > 1 and parts[1] else None
         sentence = parts[2] if len(parts) > 2 and parts[2] else None
-        entries.append({"word": word, "definition": definition, "sentence": sentence})
+        entry = {"word": word, "definition": definition, "sentence": sentence}
+        if alts:
+            entry["alt"] = alts
+        entries.append(entry)
     return entries, errors, warnings
 
 
@@ -280,6 +323,14 @@ def mask_word_in_text(text, word):
     if not text:
         return text
     return re.sub(r"(?i)\b" + re.escape(word) + r"\b", WORD_MASK, text)
+
+
+def mask_spellings_in_text(text, spellings):
+    """Mask the primary word AND every accepted alternative (alts are answers
+    too — same NFR-6 treatment)."""
+    for s in spellings:
+        text = mask_word_in_text(text, s)
+    return text
 
 
 # ---------------------------------------------------------------------------
@@ -433,13 +484,17 @@ class ServerApp:
             tier = item.get("tier")
             if not word or tier not in VALID_TIERS:
                 continue
-            words.append({
+            alts = [str(a).strip() for a in (item.get("alt") or []) if str(a).strip()]
+            entry = {
                 "word": word,
                 "tier": tier,
                 "definition": item.get("definition") or None,
                 "sentence": item.get("sentence") or None,
                 "category": item.get("category") or None,
-            })
+            }
+            if alts:
+                entry["alt"] = alts
+            words.append(entry)
         self.corpus_words = words
         logger.info("Loaded corpus: %d words from %s", len(words), source)
 
@@ -651,6 +706,7 @@ class ServerApp:
             for key, rec in progress_words.items():
                 if rec.get("missedEver") and not is_word_mastered(rec):
                     pool.append({"word": rec.get("word") or key,
+                                 "alt": rec.get("alt") or [],
                                  "definition": rec.get("definition"),
                                  "sentence": rec.get("sentence")})
             if len(pool) < MIN_SESSION_WORDS:
@@ -680,14 +736,19 @@ class ServerApp:
         with self.sessions_lock:
             self._prune_sessions()
             self.sessions[session["id"]] = session
-        payload_entries = [{
-            # Base64-obfuscated word: the client needs it for TTS, but it never
-            # appears in cleartext in the payload or the DOM pre-answer (NFR-6).
-            # The word is also masked out of its own definition/sentence.
-            "w": b64_word(e["word"]),
-            "definition": mask_word_in_text(e.get("definition"), e["word"]),
-            "sentence": mask_word_in_text(e.get("sentence"), e["word"]),
-        } for e in entries]
+        payload_entries = []
+        for e in entries:
+            spellings = accepted_spellings(e)
+            payload_entries.append({
+                # Base64-obfuscated spellings: the client needs the primary for
+                # TTS, but nothing appears in cleartext in the payload or the
+                # DOM pre-answer (NFR-6). Alts are answers too — same handling,
+                # and all spellings are masked out of definition/sentence.
+                "w": b64_word(e["word"]),
+                "a": [b64_word(a) for a in (e.get("alt") or [])],
+                "definition": mask_spellings_in_text(e.get("definition"), spellings),
+                "sentence": mask_spellings_in_text(e.get("sentence"), spellings),
+            })
         return {
             "sessionId": session["id"],
             "label": label,
@@ -742,9 +803,16 @@ class ServerApp:
                 raise ApiError(409, "This session is already finished.")
             index = sess["index"]
             entry = sess["entries"][index]
-            correct_word = entry["word"]
-            is_correct = grade_attempt(attempt, correct_word)
-            diff = None if is_correct else letter_diff(attempt, correct_word)
+            correct_word = entry["word"]            # primary: display/TTS/progress key
+            alts = entry.get("alt") or []
+            spellings = accepted_spellings(entry)   # primary first
+            is_correct = grade_any(attempt, spellings)
+            if is_correct:
+                diff = None
+            else:
+                # Diff against whichever accepted spelling needs the fewest
+                # edits — the most helpful comparison for the kid.
+                diff = letter_diff(attempt, closest_spelling(attempt, spellings))
             if is_correct:
                 sess["streak"] += 1
                 sess["bestStreak"] = max(sess["bestStreak"], sess["streak"])
@@ -752,6 +820,7 @@ class ServerApp:
                 sess["streak"] = 0  # silent break — no shaming
             sess["results"].append({
                 "word": correct_word,
+                "alt": alts,
                 "attempt": attempt.strip(),
                 "correct": is_correct,
                 "definition": entry.get("definition"),
@@ -770,6 +839,7 @@ class ServerApp:
         return {
             "correct": is_correct,
             "correctWord": correct_word,
+            "alsoSpelled": alts,
             "attempt": attempt.strip(),
             "diff": diff,
             "streak": streak,
@@ -789,6 +859,8 @@ class ServerApp:
                 rec["definition"] = entry["definition"]
             if entry.get("sentence"):
                 rec["sentence"] = entry["sentence"]
+            if entry.get("alt"):
+                rec["alt"] = entry["alt"]   # keep accepting alts in tricky reviews
             rec["lastSeen"] = time.time()
             if is_correct:
                 rec["correct"] = rec.get("correct", 0) + 1
@@ -809,6 +881,7 @@ class ServerApp:
         hints_used = bool(sess["hintedWords"])
         stars = compute_stars(correct_count, total, hints_used)
         missed = [{"word": r["word"], "attempt": r["attempt"],
+                   "alsoSpelled": r.get("alt") or [],
                    "definition": r.get("definition")}
                   for r in sess["results"] if not r["correct"]]
         with self.store.lock:

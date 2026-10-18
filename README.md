@@ -109,6 +109,13 @@ deploy/              host assets (systemd units, stdlib updater, Caddyfile) —
 
 `tier`: 1 = Warm-up, 2 = Challenger, 3 = Bee-Ready.
 
+Optional fields: `"alt": ["brasier"]` — accepted alternative spellings
+(`word` stays the primary: it is what TTS speaks, what spell-it-to-me spells,
+what the reveal shows, and the key progress/mastery is tracked under).
+Multi-word entries ("sierra leone", "salicylic acid") are fine: grading
+collapses runs of internal spaces and is case-insensitive, so proper nouns
+are stored lowercase.
+
 ## API
 
 All request/response bodies are JSON.
@@ -124,10 +131,10 @@ All request/response bodies are JSON.
 | `GET /api/profiles/{id}/progress` | `{sessionsPlayed, totalStars, bestStreak, trickyWords, trickyCount}` |
 | `GET /api/lists` | All custom lists (shared across profiles) |
 | `POST /api/lists/validate` | Dry-run parse of textarea text → `{entries, errors, warnings}` |
-| `POST /api/lists` | Create: `{name, text}`. 400 + per-line `errors` on invalid lines; duplicate names → 409; duplicate words collapsed with `warnings` |
+| `POST /api/lists` | Create: `{name, text}`. One entry per line `word | definition | sentence`; alternative spellings via slash in the word field (`colour/color`). 400 + per-line `errors` on invalid lines; duplicate names → 409; duplicate words collapsed with `warnings` |
 | `PUT /api/lists/{id}` | Edit (same body/validation as create) |
 | `DELETE /api/lists/{id}` | Delete list |
-| `POST /api/session` | `{profileId, source}` where source is `{type:"tier",tier:1..3}`, `{type:"list",listId}`, or `{type:"tricky"}`. Returns `{sessionId, label, count, entries:[{w, definition, sentence}]}` |
+| `POST /api/session` | `{profileId, source}` where source is `{type:"tier",tier:1..3}`, `{type:"list",listId}`, or `{type:"tricky"}`. Returns `{sessionId, label, count, entries:[{w, a, definition, sentence}]}` (`w` = base64 primary, `a` = base64 alternative spellings) |
 | `POST /api/session/{id}/answer` | `{attempt}` → server grades: `{correct, correctWord, diff, streak, index, total, done, summary?}` |
 | `POST /api/session/{id}/hint` | `{kind:"definition"\|"sentence"\|"peek", ttsBroken?}` — records hint usage (affects stars) |
 
@@ -141,11 +148,17 @@ backup or update the app) — no silent corruption.
 ### Grading rules
 
 Case-insensitive; leading/trailing whitespace trimmed; internal runs of spaces
-collapsed; curly apostrophes normalized to straight. Internal hyphens and
-apostrophes **must** match (`dont` ≠ `don't`). Wrong answers return an aligned
-letter diff (`difflib.SequenceMatcher`) with segment ops:
-`match`, `wrong` (substitution), `extra` (letters to remove), `missing`
-(letters to add).
+collapsed (so multi-word entries like "sierra leone" grade naturally); curly
+apostrophes normalized to straight. Internal hyphens and apostrophes **must**
+match (`dont` ≠ `don't`, `cul de sac` ≠ `cul-de-sac`). Words with accepted
+**alternative spellings** (corpus `alt` field, or `word/alt` in custom lists)
+count correct for the primary or any alternative. Wrong answers return an
+aligned letter diff (`difflib.SequenceMatcher`) computed against whichever
+accepted spelling is *closest* to the attempt (fewest edits; ties go to the
+primary) — the kid gets the most helpful comparison, while the reveal and
+summary always show the primary spelling with an "also spelled" note.
+Diff segment ops: `match`, `wrong` (substitution), `extra` (letters to
+remove), `missing` (letters to add).
 
 ### Stars
 
@@ -173,7 +186,8 @@ session becomes available once a profile has 3+ unmastered missed words.
 - **Spell it to me** — *post-answer only* (feedback card and summary): speaks
   the word, then each letter with natural pauses, then the word again
   ("necessary… N, E, C, E, S, S, A, R, Y… necessary"). Free — the answer is
-  already locked in. Hyphens/apostrophes are spoken by name.
+  already locked in. Hyphens/apostrophes are spoken by name; the space in a
+  multi-word entry is spoken as "new word". Always spells the primary spelling.
 
 ## Voice spelling (Chrome/Edge)
 
@@ -219,6 +233,7 @@ Headless tests for the letter filter: `node test_letterfilter.js`.
 | `Alt+S` | Hear it slowly |
 | `Alt+D` | Hear the definition (counts as a hint) |
 | `Alt+E` | Hear it in a sentence (counts as a hint) |
+| `Alt+M` | Toggle the voice-spelling mic (same guards as the button; waits out any in-progress TTS before listening) |
 | any key | Skip the auto-advance after a correct answer |
 | `Esc` | Close overlays |
 
@@ -234,7 +249,9 @@ the word to speak it. True server-side secrecy is therefore impossible. The
 implemented best-effort design:
 
 1. The session payload carries each word **base64-obfuscated** (`w` field) —
-   never cleartext JSON.
+   never cleartext JSON. Accepted alternative spellings are answers too, so
+   they ship the same way (`a` field) and are masked out of definitions and
+   sentences alongside the primary.
 2. The word is additionally **masked out of its own definition and sentence**
    in the payload (`_____`); the client substitutes it back **for speech
    only**.

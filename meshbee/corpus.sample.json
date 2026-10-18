@@ -10,6 +10,8 @@
     {"word": "their", "tier": 2, "definition": "belonging to them", "sentence": "The bees returned to their hive.", "category": "homophones"},
     {"word": "telephone", "tier": 2, "definition": "a device used to talk to someone far away", "sentence": "Grandma answered the telephone on the first ring.", "category": "greek-latin-roots"},
     {"word": "balloon", "tier": 2, "definition": "a rubber bag filled with air that floats", "sentence": "The red balloon drifted over the garden.", "category": "double-consonants"},
+    {"word": "kerosene", "tier": 2, "alt": ["kerosine"], "definition": "a fuel oil used in lamps and heaters", "sentence": "The old camping lamp burns kerosene.", "category": "loanwords"},
+    {"word": "sierra leone", "tier": 3, "definition": "a country on the west coast of Africa", "sentence": "Freetown is the capital of Sierra Leone.", "category": "loanwords"},
     {"word": "rhythm", "tier": 3, "definition": "a repeated pattern of sound or beats", "sentence": "The drummer kept a steady rhythm.", "category": "silent-letters"},
     {"word": "bouquet", "tier": 3, "definition": "a bunch of flowers tied together", "sentence": "He picked a bouquet of daisies for his mom.", "category": "loanwords"},
     {"word": "chrysanthemum", "tier": 3, "definition": "a bright autumn flower with many thin petals", "sentence": "A yellow chrysanthemum bloomed by the fence.", "category": "greek-latin-roots"},

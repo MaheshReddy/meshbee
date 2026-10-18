@@ -241,7 +241,8 @@
             <input id="answer-input" type="text" placeholder="Type the word…"
                    autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
             <button id="btn-mic" type="button" class="btn-mic hidden" aria-pressed="false"
-                    title="Spell by voice" aria-label="Spell by voice (say letters out loud)">
+                    title="Spell by voice (Alt+M)"
+                    aria-label="Spell by voice — say letters out loud (shortcut Alt+M)">
               <svg class="icon" aria-hidden="true"><use href="#icon-mic"/></svg>
             </button>
             <button id="btn-submit" type="submit" class="btn btn-primary btn-large">Check it!</button>
@@ -250,7 +251,7 @@
 
           <div id="feedback" class="feedback hidden" aria-live="assertive"></div>
         </div>
-        <p class="kbd-help">Enter = check &nbsp;·&nbsp; F2 or Alt+R = hear again &nbsp;·&nbsp; Alt+S = slow &nbsp;·&nbsp; Alt+D = definition &nbsp;·&nbsp; Alt+E = sentence &nbsp;·&nbsp; mic button = spell by voice (say "submit", "undo", "clear", "repeat")</p>
+        <p class="kbd-help">Enter = check &nbsp;·&nbsp; F2 or Alt+R = hear again &nbsp;·&nbsp; Alt+S = slow &nbsp;·&nbsp; Alt+D = definition &nbsp;·&nbsp; Alt+E = sentence &nbsp;·&nbsp; Alt+M = mic on/off (say "submit", "undo", "clear", "repeat")</p>
       </section>
 
       <!-- ============ Summary ============ -->
@@ -289,10 +290,12 @@
           <input id="list-name" type="text" maxlength="50" autocomplete="off">
           <label class="field-label" for="list-text">
             Words — one per line: <code>word | definition | sentence</code>
-            (definition and sentence are optional)
+            (definition and sentence are optional).
+            Accepted alternative spellings go in the word with a slash:
+            <code>colour/color</code>
           </label>
           <textarea id="list-text" rows="10" spellcheck="false"
-            placeholder="necessary | needed; you must have it | It is necessary to wear a helmet.&#10;rhythm&#10;banana | a long yellow fruit"></textarea>
+            placeholder="necessary | needed; you must have it | It is necessary to wear a helmet.&#10;colour/color | a shade like red or blue&#10;rhythm"></textarea>
           <div id="list-form-feedback" class="list-feedback" aria-live="polite"></div>
           <div class="btn-row">
             <button id="list-save" class="btn btn-primary">Save list</button>
